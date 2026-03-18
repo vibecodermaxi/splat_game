@@ -33,7 +33,7 @@ const BET_AMOUNT_LAMPORTS = 50_000_000; // 0.05 SOL
 const BET_COLOR_INDEX = 0; // Red
 const SEASON_NUMBER = 1;
 const POLL_INTERVAL_MS = 5_000; // 5 seconds
-const MAX_WAIT_MS = 5 * 60 * 1000; // 5 minute overall timeout
+const MAX_WAIT_MS = 12 * 60 * 1000; // 12 minute overall timeout (5-min round = ~4 min bet + ~1 min lock + claim)
 
 // ---------------------------------------------------------------------------
 // Argument parsing
