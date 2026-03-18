@@ -37,8 +37,8 @@ Full details: `.planning/milestones/v1.0-ROADMAP.md`
   5. The canvas and betting panel update live on-screen when a PixelState or SeasonState account changes on devnet
 **Plans:** 2/2 plans complete
 Plans:
-- [ ] 05-01-PLAN.md — IDL copy script and centralized env var config for oracle
-- [ ] 05-02-PLAN.md — Frontend env-driven constants and hardcoded value removal
+- [x] 05-01-PLAN.md — IDL copy script and centralized env var config for oracle
+- [x] 05-02-PLAN.md — Frontend env-driven constants and hardcoded value removal
 
 ### Phase 6: Deploy and Prove
 **Goal**: Oracle is live on Railway, frontend is live on Vercel, a season is running on devnet, and a smoke test confirms the full bet-to-claim cycle works end-to-end
@@ -50,7 +50,10 @@ Plans:
   3. An admin can run a single CLI command to initialize a new season and see the oracle begin opening pixel rounds
   4. A player visiting the Vercel URL can connect a wallet, place a bet, watch the countdown, see the AI pick a color, and find the result in My Bets — all in one session
   5. The smoke test script runs to completion, prints "PASS", and the terminal shows a claimed SOL balance
-**Plans**: TBD
+**Plans:** 2 plans
+Plans:
+- [ ] 06-01-PLAN.md — Oracle health endpoint, Dockerfile, Vercel config, and Railway/Vercel deployment
+- [ ] 06-02-PLAN.md — E2E smoke test script and live deployment verification
 
 ## Progress
 
@@ -60,5 +63,5 @@ Plans:
 | 2. Oracle Service | v1.0 | 6/6 | Complete | 2026-03-17 |
 | 3. Frontend Core | v1.0 | 4/4 | Complete | 2026-03-18 |
 | 4. Trust Layer and Docs | v1.0 | 5/5 | Complete | 2026-03-18 |
-| 5. Wire | 2/2 | Complete   | 2026-03-18 | - |
-| 6. Deploy and Prove | v1.1 | 0/TBD | Not started | - |
+| 5. Wire | v1.1 | 2/2 | Complete | 2026-03-18 |
+| 6. Deploy and Prove | v1.1 | 0/2 | Not started | - |
