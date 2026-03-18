@@ -1,0 +1,1675 @@
+{
+  "address": "FaVo1qzkbVt1uPwyU4jRZ7hgkJbYTzat8iqtPE3orxQG",
+  "metadata": {
+    "name": "pixel_predict",
+    "version": "0.1.0",
+    "spec": "0.1.0",
+    "description": "Created with Anchor"
+  },
+  "instructions": [
+    {
+      "name": "claim_winnings",
+      "docs": [
+        "Claim payout for a winning bet.",
+        "Player-callable. Validates winning color and transfers payout."
+      ],
+      "discriminator": [
+        161,
+        215,
+        24,
+        59,
+        14,
+        236,
+        242,
+        221
+      ],
+      "accounts": [
+        {
+          "name": "pixel_state",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  105,
+                  120,
+                  101,
+                  108
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "pixel_state.season_number",
+                "account": "PixelState"
+              },
+              {
+                "kind": "account",
+                "path": "pixel_state.pixel_index",
+                "account": "PixelState"
+              }
+            ]
+          }
+        },
+        {
+          "name": "bet_account",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  98,
+                  101,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "pixel_state.season_number",
+                "account": "PixelState"
+              },
+              {
+                "kind": "account",
+                "path": "pixel_state.pixel_index",
+                "account": "PixelState"
+              },
+              {
+                "kind": "account",
+                "path": "player"
+              }
+            ]
+          }
+        },
+        {
+          "name": "player_season_stats",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  116,
+                  97,
+                  116,
+                  115
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "pixel_state.season_number",
+                "account": "PixelState"
+              },
+              {
+                "kind": "account",
+                "path": "player"
+              }
+            ]
+          }
+        },
+        {
+          "name": "player",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "initialize_config",
+      "docs": [
+        "Initialize the singleton config PDA with admin and oracle pubkeys.",
+        "Must be called once before any season can be started."
+      ],
+      "discriminator": [
+        208,
+        127,
+        21,
+        1,
+        194,
+        190,
+        196,
+        70
+      ],
+      "accounts": [
+        {
+          "name": "config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "admin",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "oracle",
+          "type": "pubkey"
+        }
+      ]
+    },
+    {
+      "name": "lock_round",
+      "docs": [
+        "Lock the round when the 28-minute betting window expires.",
+        "Permissionless crank — anyone can call once lockout time is reached."
+      ],
+      "discriminator": [
+        68,
+        124,
+        43,
+        230,
+        30,
+        44,
+        248,
+        227
+      ],
+      "accounts": [
+        {
+          "name": "pixel_state",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  105,
+                  120,
+                  101,
+                  108
+                ]
+              },
+              {
+                "kind": "arg",
+                "path": "season_number"
+              },
+              {
+                "kind": "arg",
+                "path": "pixel_index"
+              }
+            ]
+          }
+        },
+        {
+          "name": "caller",
+          "docs": [
+            "Fee payer for the transaction — permissionless, any account can crank this"
+          ],
+          "writable": true,
+          "signer": true
+        }
+      ],
+      "args": [
+        {
+          "name": "season_number",
+          "type": "u16"
+        },
+        {
+          "name": "pixel_index",
+          "type": "u16"
+        }
+      ]
+    },
+    {
+      "name": "open_round",
+      "docs": [
+        "Open the next pixel's round for betting.",
+        "Oracle-only. Posts prompt_hash on-chain for commit-reveal verifiability.",
+        "Accepts pixel_index = current OR current+1 (lookahead for SC-17 future betting)."
+      ],
+      "discriminator": [
+        66,
+        235,
+        123,
+        240,
+        8,
+        35,
+        185,
+        159
+      ],
+      "accounts": [
+        {
+          "name": "season_state",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  101,
+                  97,
+                  115,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "season_state.season_number",
+                "account": "SeasonState"
+              }
+            ]
+          }
+        },
+        {
+          "name": "pixel_state",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  105,
+                  120,
+                  101,
+                  108
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "season_state.season_number",
+                "account": "SeasonState"
+              },
+              {
+                "kind": "arg",
+                "path": "pixel_index"
+              }
+            ]
+          }
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "oracle",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "config"
+          ]
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "pixel_index",
+          "type": "u16"
+        },
+        {
+          "name": "prompt_hash",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "place_bet",
+      "docs": [
+        "Place or increase a bet on a color for a specific pixel.",
+        "Player-callable. Creates BetAccount and PlayerSeasonStats if needed."
+      ],
+      "discriminator": [
+        222,
+        62,
+        67,
+        220,
+        63,
+        166,
+        126,
+        33
+      ],
+      "accounts": [
+        {
+          "name": "season_state",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  101,
+                  97,
+                  115,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "season_state.season_number",
+                "account": "SeasonState"
+              }
+            ]
+          }
+        },
+        {
+          "name": "pixel_state",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  105,
+                  120,
+                  101,
+                  108
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "season_state.season_number",
+                "account": "SeasonState"
+              },
+              {
+                "kind": "arg",
+                "path": "pixel_index"
+              }
+            ]
+          }
+        },
+        {
+          "name": "bet_account",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  98,
+                  101,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "season_state.season_number",
+                "account": "SeasonState"
+              },
+              {
+                "kind": "arg",
+                "path": "pixel_index"
+              },
+              {
+                "kind": "account",
+                "path": "player"
+              }
+            ]
+          }
+        },
+        {
+          "name": "player_season_stats",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  116,
+                  97,
+                  116,
+                  115
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "season_state.season_number",
+                "account": "SeasonState"
+              },
+              {
+                "kind": "account",
+                "path": "player"
+              }
+            ]
+          }
+        },
+        {
+          "name": "player",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "pixel_index",
+          "type": "u16"
+        },
+        {
+          "name": "color",
+          "type": "u8"
+        },
+        {
+          "name": "amount",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "resolve_round",
+      "docs": [
+        "Resolve the round with AI-determined color, shade, and warmth.",
+        "Oracle-only. Transfers rake to treasury and jackpot wallets."
+      ],
+      "discriminator": [
+        165,
+        114,
+        237,
+        158,
+        1,
+        36,
+        70,
+        254
+      ],
+      "accounts": [
+        {
+          "name": "season_state",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  101,
+                  97,
+                  115,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "season_state.season_number",
+                "account": "SeasonState"
+              }
+            ]
+          }
+        },
+        {
+          "name": "pixel_state",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  105,
+                  120,
+                  101,
+                  108
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "season_state.season_number",
+                "account": "SeasonState"
+              },
+              {
+                "kind": "account",
+                "path": "pixel_state.pixel_index",
+                "account": "PixelState"
+              }
+            ]
+          }
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "oracle",
+          "signer": true,
+          "relations": [
+            "config"
+          ]
+        },
+        {
+          "name": "treasury",
+          "writable": true,
+          "address": "6vTe3xRjB4Hv4fN4WQ5xtcF21Ed12DFPoNwHJTZDUg5v"
+        },
+        {
+          "name": "jackpot",
+          "writable": true,
+          "address": "HrfnbCNRzvekRkdUJGzvmEu478F43uk7weReNDPqv2TB"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "winning_color",
+          "type": "u8"
+        },
+        {
+          "name": "shade",
+          "type": "u8"
+        },
+        {
+          "name": "warmth",
+          "type": "u8"
+        },
+        {
+          "name": "vrf_resolved",
+          "type": "bool"
+        }
+      ]
+    },
+    {
+      "name": "resolve_round_vrf",
+      "docs": [
+        "Resolve the round using VRF fallback when AI is unavailable.",
+        "Oracle-only. Verifies ORAO VRF proof on-chain (owner check + fulfillment check).",
+        "Derives winning_color from randomness[0] % 16, forces shade=50 warmth=50."
+      ],
+      "discriminator": [
+        23,
+        105,
+        53,
+        4,
+        157,
+        192,
+        116,
+        246
+      ],
+      "accounts": [
+        {
+          "name": "season_state",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  101,
+                  97,
+                  115,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "season_state.season_number",
+                "account": "SeasonState"
+              }
+            ]
+          }
+        },
+        {
+          "name": "pixel_state",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  105,
+                  120,
+                  101,
+                  108
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "season_state.season_number",
+                "account": "SeasonState"
+              },
+              {
+                "kind": "account",
+                "path": "pixel_state.pixel_index",
+                "account": "PixelState"
+              }
+            ]
+          }
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "oracle",
+          "signer": true,
+          "relations": [
+            "config"
+          ]
+        },
+        {
+          "name": "treasury",
+          "writable": true,
+          "address": "6vTe3xRjB4Hv4fN4WQ5xtcF21Ed12DFPoNwHJTZDUg5v"
+        },
+        {
+          "name": "jackpot",
+          "writable": true,
+          "address": "HrfnbCNRzvekRkdUJGzvmEu478F43uk7weReNDPqv2TB"
+        },
+        {
+          "name": "randomness_account",
+          "docs": [
+            "On-chain proof verification: account must be owned by the Switchboard randomness program.",
+            "The owner constraint is enforced by the Anchor runtime — any account not created by",
+            "Switchboard's program will have a different owner and this instruction will reject it.",
+            "The data is then read manually to verify the discriminator and fulfillment status",
+            "(non-zero value bytes = fulfilled)."
+          ]
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "set_arweave_txid",
+      "docs": [
+        "Write the Arweave transaction ID back to a resolved PixelState.",
+        "Oracle-only. Called after uploading the prompt text to Arweave, completing",
+        "the commit-reveal chain (prompt hash at open → Arweave upload → txid on-chain)."
+      ],
+      "discriminator": [
+        54,
+        251,
+        97,
+        229,
+        148,
+        20,
+        63,
+        30
+      ],
+      "accounts": [
+        {
+          "name": "pixel_state",
+          "docs": [
+            "The pixel state to update — must be in Resolved status.",
+            "Seeds use instruction args (same pattern as lock_round) to avoid",
+            "self-referential PDA validation failure in Anchor 0.32."
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  105,
+                  120,
+                  101,
+                  108
+                ]
+              },
+              {
+                "kind": "arg",
+                "path": "season_number"
+              },
+              {
+                "kind": "arg",
+                "path": "pixel_index"
+              }
+            ]
+          }
+        },
+        {
+          "name": "config",
+          "docs": [
+            "Config PDA — provides oracle authorization via has_one constraint."
+          ],
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "oracle",
+          "docs": [
+            "Oracle signer — must match the oracle pubkey stored in config."
+          ],
+          "signer": true,
+          "relations": [
+            "config"
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "season_number",
+          "type": "u16"
+        },
+        {
+          "name": "pixel_index",
+          "type": "u16"
+        },
+        {
+          "name": "arweave_txid",
+          "type": {
+            "array": [
+              "u8",
+              43
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "start_season",
+      "docs": [
+        "Start a new season by initializing a SeasonState PDA.",
+        "Admin-only. Previous season (if any) must be Completed."
+      ],
+      "discriminator": [
+        152,
+        173,
+        197,
+        144,
+        221,
+        79,
+        236,
+        62
+      ],
+      "accounts": [
+        {
+          "name": "season_state",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  101,
+                  97,
+                  115,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "arg",
+                "path": "season_number"
+              }
+            ]
+          }
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "admin",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "config"
+          ]
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "season_number",
+          "type": "u16"
+        },
+        {
+          "name": "grid_width",
+          "type": "u8"
+        },
+        {
+          "name": "grid_height",
+          "type": "u8"
+        }
+      ]
+    },
+    {
+      "name": "update_oracle",
+      "docs": [
+        "Update the oracle pubkey in the config PDA.",
+        "Admin-only. Allows oracle key rotation without program redeployment."
+      ],
+      "discriminator": [
+        112,
+        41,
+        209,
+        18,
+        248,
+        226,
+        252,
+        188
+      ],
+      "accounts": [
+        {
+          "name": "config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "admin",
+          "signer": true,
+          "relations": [
+            "config"
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "new_oracle",
+          "type": "pubkey"
+        }
+      ]
+    }
+  ],
+  "accounts": [
+    {
+      "name": "BetAccount",
+      "discriminator": [
+        117,
+        187,
+        165,
+        174,
+        194,
+        28,
+        119,
+        76
+      ]
+    },
+    {
+      "name": "ConfigAccount",
+      "discriminator": [
+        189,
+        255,
+        97,
+        70,
+        186,
+        189,
+        24,
+        102
+      ]
+    },
+    {
+      "name": "PixelState",
+      "discriminator": [
+        207,
+        62,
+        140,
+        24,
+        124,
+        37,
+        41,
+        85
+      ]
+    },
+    {
+      "name": "PlayerSeasonStats",
+      "discriminator": [
+        30,
+        179,
+        143,
+        24,
+        183,
+        101,
+        247,
+        90
+      ]
+    },
+    {
+      "name": "SeasonState",
+      "discriminator": [
+        95,
+        85,
+        74,
+        250,
+        108,
+        189,
+        152,
+        52
+      ]
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "UnauthorizedOracle",
+      "msg": "Oracle signature does not match config"
+    },
+    {
+      "code": 6001,
+      "name": "UnauthorizedAdmin",
+      "msg": "Admin signature does not match config"
+    },
+    {
+      "code": 6002,
+      "name": "InvalidColor",
+      "msg": "Color must be 0-15"
+    },
+    {
+      "code": 6003,
+      "name": "InvalidShade",
+      "msg": "Shade must be 0-100"
+    },
+    {
+      "code": 6004,
+      "name": "InvalidWarmth",
+      "msg": "Warmth must be 0-100"
+    },
+    {
+      "code": 6005,
+      "name": "BetTooSmall",
+      "msg": "Bet below minimum (0.01 SOL)"
+    },
+    {
+      "code": 6006,
+      "name": "BetTooLarge",
+      "msg": "Bet exceeds maximum (10 SOL per color per pixel)"
+    },
+    {
+      "code": 6007,
+      "name": "BettingLocked",
+      "msg": "Betting window has closed"
+    },
+    {
+      "code": 6008,
+      "name": "RoundNotOpen",
+      "msg": "Round is not in Open status"
+    },
+    {
+      "code": 6009,
+      "name": "RoundNotLocked",
+      "msg": "Round is not in Locked status"
+    },
+    {
+      "code": 6010,
+      "name": "RoundNotResolved",
+      "msg": "Round is not in Resolved status"
+    },
+    {
+      "code": 6011,
+      "name": "RoundAlreadyResolved",
+      "msg": "Round has already been resolved"
+    },
+    {
+      "code": 6012,
+      "name": "ColorMismatch",
+      "msg": "Cannot change bet color for this pixel"
+    },
+    {
+      "code": 6013,
+      "name": "AlreadyClaimed",
+      "msg": "Winnings already claimed"
+    },
+    {
+      "code": 6014,
+      "name": "NotWinner",
+      "msg": "Bet color does not match winning color"
+    },
+    {
+      "code": 6015,
+      "name": "ArithmeticOverflow",
+      "msg": "Arithmetic overflow in calculation"
+    },
+    {
+      "code": 6016,
+      "name": "SeasonNotActive",
+      "msg": "Season is not in Active status"
+    },
+    {
+      "code": 6017,
+      "name": "SeasonNotCompleted",
+      "msg": "Previous season not completed"
+    },
+    {
+      "code": 6018,
+      "name": "InvalidPixelIndex",
+      "msg": "Pixel index out of bounds"
+    },
+    {
+      "code": 6019,
+      "name": "LockoutNotReached",
+      "msg": "28-minute betting window has not elapsed"
+    },
+    {
+      "code": 6020,
+      "name": "InsufficientFunds",
+      "msg": "Insufficient lamports for payout"
+    },
+    {
+      "code": 6021,
+      "name": "PreviousRoundNotResolved",
+      "msg": "Previous pixel round must be resolved first"
+    },
+    {
+      "code": 6022,
+      "name": "VrfNotFulfilled",
+      "msg": "VRF randomness has not been fulfilled"
+    },
+    {
+      "code": 6023,
+      "name": "InvalidVrfAccount",
+      "msg": "VRF account does not belong to expected VRF program"
+    },
+    {
+      "code": 6024,
+      "name": "InvalidTreasury",
+      "msg": "Treasury wallet address does not match the hardcoded constant"
+    },
+    {
+      "code": 6025,
+      "name": "InvalidJackpot",
+      "msg": "Jackpot wallet address does not match the hardcoded constant"
+    }
+  ],
+  "types": [
+    {
+      "name": "BetAccount",
+      "docs": [
+        "Individual bet by a player on a specific pixel",
+        "PDA seeds: [\"bet\", season_number.to_le_bytes(), pixel_index.to_le_bytes(), player.key()]",
+        "",
+        "One bet account per (player, pixel) pair — players must commit to a single color per pixel.",
+        "Amount can be increased (via place_bet again) until betting locks."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "player",
+            "docs": [
+              "Player who placed this bet"
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "season_number",
+            "docs": [
+              "Season this bet belongs to"
+            ],
+            "type": "u16"
+          },
+          {
+            "name": "pixel_index",
+            "docs": [
+              "Pixel this bet is for (0-99)"
+            ],
+            "type": "u16"
+          },
+          {
+            "name": "color",
+            "docs": [
+              "Color this player bet on (0-15) — cannot be changed after initial bet"
+            ],
+            "type": "u8"
+          },
+          {
+            "name": "amount",
+            "docs": [
+              "Total lamports bet by this player on this pixel (can increase up to MAX_BET_PER_COLOR)"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "claimed",
+            "docs": [
+              "True if winnings have been claimed — prevents double-claiming"
+            ],
+            "type": "bool"
+          },
+          {
+            "name": "bump",
+            "docs": [
+              "PDA bump seed"
+            ],
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ConfigAccount",
+      "docs": [
+        "Singleton configuration PDA",
+        "PDA seeds: [\"config\"]"
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "admin",
+            "docs": [
+              "Admin authority — can rotate oracle key and manage seasons"
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "oracle",
+            "docs": [
+              "Oracle keypair pubkey — named `oracle` for Anchor `has_one` compatibility",
+              "Admin can rotate this without program redeployment"
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "bump",
+            "docs": [
+              "PDA bump seed"
+            ],
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "PixelState",
+      "docs": [
+        "Pixel round state — one entry per pixel per season",
+        "PDA seeds: [\"pixel\", season_number.to_le_bytes(), pixel_index.to_le_bytes()]"
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "season_number",
+            "docs": [
+              "Season this pixel belongs to"
+            ],
+            "type": "u16"
+          },
+          {
+            "name": "pixel_index",
+            "docs": [
+              "Sequential pixel index within the season (0-99)",
+              "Maps to canvas position: x = pixel_index % grid_width, y = pixel_index / grid_width"
+            ],
+            "type": "u16"
+          },
+          {
+            "name": "x",
+            "docs": [
+              "X coordinate on canvas (0-9)"
+            ],
+            "type": "u8"
+          },
+          {
+            "name": "y",
+            "docs": [
+              "Y coordinate on canvas (0-9)"
+            ],
+            "type": "u8"
+          },
+          {
+            "name": "status",
+            "docs": [
+              "Current round lifecycle status"
+            ],
+            "type": {
+              "defined": {
+                "name": "RoundStatus"
+              }
+            }
+          },
+          {
+            "name": "color_pools",
+            "docs": [
+              "Lamports bet per color (indexed 0-15 matching the 16 game colors)"
+            ],
+            "type": {
+              "array": [
+                "u64",
+                16
+              ]
+            }
+          },
+          {
+            "name": "total_pool",
+            "docs": [
+              "Sum of all color_pools — total lamports in this round's pool"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "winning_color",
+            "docs": [
+              "Winning color index (0-15), None until round is Resolved"
+            ],
+            "type": {
+              "option": "u8"
+            }
+          },
+          {
+            "name": "shade",
+            "docs": [
+              "Visual shade modifier (0-100), None until round is Resolved"
+            ],
+            "type": {
+              "option": "u8"
+            }
+          },
+          {
+            "name": "warmth",
+            "docs": [
+              "Visual warmth modifier (0-100), None until round is Resolved"
+            ],
+            "type": {
+              "option": "u8"
+            }
+          },
+          {
+            "name": "prompt_hash",
+            "docs": [
+              "SHA-256 hash of the full AI prompt pre-committed at round open",
+              "Enables commit-reveal verifiability"
+            ],
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "arweave_txid",
+            "docs": [
+              "Arweave transaction ID where the full prompt text is stored (43 bytes, base58)",
+              "All zeros means not yet uploaded — check has_arweave_txid flag"
+            ],
+            "type": {
+              "array": [
+                "u8",
+                43
+              ]
+            }
+          },
+          {
+            "name": "has_arweave_txid",
+            "docs": [
+              "True when arweave_txid has been set (since [u8; 43] cannot use Option<> with InitSpace)"
+            ],
+            "type": "bool"
+          },
+          {
+            "name": "vrf_resolved",
+            "docs": [
+              "True if VRF fallback was used for resolution (AI was unavailable)"
+            ],
+            "type": "bool"
+          },
+          {
+            "name": "opened_at",
+            "docs": [
+              "Unix timestamp when round was opened for betting"
+            ],
+            "type": "i64"
+          },
+          {
+            "name": "locked_at",
+            "docs": [
+              "Unix timestamp when round was locked (28-min window elapsed), None until locked"
+            ],
+            "type": {
+              "option": "i64"
+            }
+          },
+          {
+            "name": "resolved_at",
+            "docs": [
+              "Unix timestamp when round was resolved, None until resolved"
+            ],
+            "type": {
+              "option": "i64"
+            }
+          },
+          {
+            "name": "bump",
+            "docs": [
+              "PDA bump seed"
+            ],
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "PlayerSeasonStats",
+      "docs": [
+        "Per-player per-season statistics",
+        "PDA seeds: [\"stats\", season_number.to_le_bytes(), player.key()]",
+        "",
+        "Initialized on first bet. correct_predictions updated at claim time (not resolve time)",
+        "to avoid unbounded compute at resolution."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "player",
+            "docs": [
+              "Player's public key"
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "season_number",
+            "docs": [
+              "Season these stats belong to"
+            ],
+            "type": "u16"
+          },
+          {
+            "name": "total_bets",
+            "docs": [
+              "Total number of bets placed by this player in this season"
+            ],
+            "type": "u32"
+          },
+          {
+            "name": "total_volume",
+            "docs": [
+              "Total lamports bet by this player in this season"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "correct_predictions",
+            "docs": [
+              "Number of correctly predicted pixels (incremented at claim time)"
+            ],
+            "type": "u16"
+          },
+          {
+            "name": "colors_bet",
+            "docs": [
+              "Count of bets placed per color (indexed 0-15)"
+            ],
+            "type": {
+              "array": [
+                "u16",
+                16
+              ]
+            }
+          },
+          {
+            "name": "bump",
+            "docs": [
+              "PDA bump seed"
+            ],
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "RoundStatus",
+      "docs": [
+        "Round lifecycle status for each pixel",
+        "PDA seeds: [\"pixel\", season_number.to_le_bytes(), pixel_index.to_le_bytes()]"
+      ],
+      "repr": {
+        "kind": "rust"
+      },
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Open"
+          },
+          {
+            "name": "Locked"
+          },
+          {
+            "name": "Resolved"
+          }
+        ]
+      }
+    },
+    {
+      "name": "SeasonState",
+      "docs": [
+        "Season state — one entry per season (100 pixels per season)",
+        "PDA seeds: [\"season\", season_number.to_le_bytes()]"
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "season_number",
+            "docs": [
+              "Sequential season identifier (Season 1, 2, 3, ...)"
+            ],
+            "type": "u16"
+          },
+          {
+            "name": "grid_width",
+            "docs": [
+              "Grid width in pixels (always 10 for v1)"
+            ],
+            "type": "u8"
+          },
+          {
+            "name": "grid_height",
+            "docs": [
+              "Grid height in pixels (always 10 for v1)"
+            ],
+            "type": "u8"
+          },
+          {
+            "name": "current_pixel_index",
+            "docs": [
+              "Index of the current/next pixel to be painted (0-99)"
+            ],
+            "type": "u16"
+          },
+          {
+            "name": "status",
+            "docs": [
+              "Current season lifecycle status"
+            ],
+            "type": {
+              "defined": {
+                "name": "SeasonStatus"
+              }
+            }
+          },
+          {
+            "name": "total_volume",
+            "docs": [
+              "Cumulative lamports bet across all rounds"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "total_bets",
+            "docs": [
+              "Cumulative number of bets placed"
+            ],
+            "type": "u32"
+          },
+          {
+            "name": "unique_wallets",
+            "docs": [
+              "Number of distinct wallets that have bet in this season"
+            ],
+            "type": "u32"
+          },
+          {
+            "name": "created_at",
+            "docs": [
+              "Unix timestamp when season was created"
+            ],
+            "type": "i64"
+          },
+          {
+            "name": "completed_at",
+            "docs": [
+              "Unix timestamp when season was completed (None if still active)"
+            ],
+            "type": {
+              "option": "i64"
+            }
+          },
+          {
+            "name": "bump",
+            "docs": [
+              "PDA bump seed"
+            ],
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "SeasonStatus",
+      "docs": [
+        "Season lifecycle status",
+        "PDA seeds: [\"season\", season_number.to_le_bytes()]"
+      ],
+      "repr": {
+        "kind": "rust"
+      },
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Active"
+          },
+          {
+            "name": "Completed"
+          },
+          {
+            "name": "Intermission"
+          }
+        ]
+      }
+    }
+  ]
+}
