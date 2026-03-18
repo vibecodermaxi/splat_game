@@ -29,6 +29,7 @@ import { uploadToArweave } from "./arweave";
 import { buildSystemPrompt, buildUserMessage, buildFullPrompt } from "./prompt";
 import { startScheduler } from "./scheduler";
 import { logger } from "./logger";
+import { startHealthServer } from "./health";
 
 /**
  * Main oracle entry point.
@@ -57,6 +58,9 @@ export async function main(): Promise<void> {
     season: config.currentSeason,
     oracle: config.oracleKeypair.publicKey.toBase58(),
   });
+
+  // Start health server immediately so Railway health checks pass even during recovery
+  startHealthServer();
 
   // -------------------------------------------------------------------------
   // 3. Recovery check — read chain state to determine current round status
