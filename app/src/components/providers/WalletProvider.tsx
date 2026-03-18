@@ -23,7 +23,7 @@ interface SolanaWalletProviderProps {
 export function SolanaWalletProvider({ children }: SolanaWalletProviderProps) {
   const endpoint =
     process.env.NEXT_PUBLIC_SOLANA_RPC_URL ??
-    "https://api.mainnet-beta.solana.com";
+    "https://api.devnet.solana.com";
 
   // Memoize the wallets array to avoid unnecessary re-renders
   const wallets = useMemo(

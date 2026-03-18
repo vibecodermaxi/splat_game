@@ -7,10 +7,14 @@ export const PROGRAM_ID = new PublicKey(
 export const GRID_SIZE = 10;
 export const TOTAL_PIXELS = 100;
 
-// Timing constants (in seconds)
-export const ROUND_DURATION_SECONDS = 1800; // 30 minutes
-export const LOCKOUT_SECONDS = 120; // final 2 minutes
-export const BETTING_WINDOW_SECONDS = 1680; // 28 minutes
+// Timing constants (in seconds) — configurable via env var
+// Set NEXT_PUBLIC_ROUND_DURATION_SECONDS in app/.env.local (default: 1800 = 30 min)
+export const ROUND_DURATION_SECONDS = parseInt(
+  process.env.NEXT_PUBLIC_ROUND_DURATION_SECONDS || "1800",
+  10
+);
+export const LOCKOUT_SECONDS = 120; // final 2 minutes — always fixed
+export const BETTING_WINDOW_SECONDS = ROUND_DURATION_SECONDS - LOCKOUT_SECONDS;
 
 // Polling / WebSocket intervals (in milliseconds)
 // IMPORTANT: 60-second pool update cadence is intentional anti-sniping design — do NOT reduce
