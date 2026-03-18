@@ -35,7 +35,7 @@ Full details: `.planning/milestones/v1.0-ROADMAP.md`
   3. A wallet-connected player can submit a `place_bet` transaction from the UI and confirm the BetAccount exists on devnet via Solana Explorer
   4. A player whose bet won can submit a `claim_winnings` transaction from the UI and see SOL arrive in their wallet
   5. The canvas and betting panel update live on-screen when a PixelState or SeasonState account changes on devnet
-**Plans:** 2 plans
+**Plans:** 1/2 plans executed
 Plans:
 - [ ] 05-01-PLAN.md — IDL copy script and centralized env var config for oracle
 - [ ] 05-02-PLAN.md — Frontend env-driven constants and hardcoded value removal
@@ -60,5 +60,5 @@ Plans:
 | 2. Oracle Service | v1.0 | 6/6 | Complete | 2026-03-17 |
 | 3. Frontend Core | v1.0 | 4/4 | Complete | 2026-03-18 |
 | 4. Trust Layer and Docs | v1.0 | 5/5 | Complete | 2026-03-18 |
-| 5. Wire | v1.1 | 0/2 | In progress | - |
+| 5. Wire | 1/2 | In Progress|  | - |
 | 6. Deploy and Prove | v1.1 | 0/TBD | Not started | - |

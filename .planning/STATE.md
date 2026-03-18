@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Playable Devnet
 status: planning
-stopped_at: "v1.1 roadmap created — phases 5-6 defined"
-last_updated: "2026-03-19T00:00:00.000Z"
+stopped_at: Completed 05-02-PLAN.md
+last_updated: "2026-03-18T19:58:01.228Z"
 last_activity: 2026-03-19 — v1.1 roadmap created; 13 requirements mapped to 2 phases
 progress:
-  total_phases: 6
-  completed_phases: 4
-  total_plans: 21
-  completed_plans: 21
+  total_phases: 2
+  completed_phases: 0
+  total_plans: 2
+  completed_plans: 1
   percent: 67
 ---
 
@@ -54,6 +54,7 @@ Progress: [████████░░] 67% (4/6 phases complete — v1.0 shi
 **Recent Trend:** Stable (v1.0 baseline)
 
 *Updated after each plan completion*
+| Phase 05-wire P02 | 2 | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -67,6 +68,8 @@ Recent decisions affecting current work:
 - [v1.0 Phase 4]: claimAll uses sequential for...of (not Promise.all) — all claims write same PlayerSeasonStats PDA
 - [v1.0 Phase 3]: useAnchorWallet (not useWallet) required for Anchor Program instantiation
 - [v1.1]: Anchor program already deployed at FaVo1qzkbVt1uPwyU4jRZ7hgkJbYTzat8iqtPE3orxQG — no redeploy needed for devnet
+- [Phase 05-wire]: LOCKOUT_SECONDS stays hardcoded at 120 — protocol constant not a deployment config
+- [Phase 05-wire]: useSeasonData reads initialSeasonNumber as param not from store — store starts at 0 before hook runs, creating circular initialization
 
 ### Pending Todos
 
@@ -79,6 +82,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-19
-Stopped at: v1.1 roadmap created — ready to plan Phase 5
+Last session: 2026-03-18T19:58:01.224Z
+Stopped at: Completed 05-02-PLAN.md
 Resume file: None
