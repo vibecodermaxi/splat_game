@@ -25,9 +25,10 @@ See: .planning/PROJECT.md (updated 2026-03-18)
 
 ## Current Position
 
-Milestone v1.0 shipped 2026-03-18
-All 4 phases, 21 plans complete
-Status: Between milestones
+Milestone: v1.1 Playable Devnet
+Phase: Not started (defining requirements)
+Status: Defining requirements
+Last activity: 2026-03-19 — Milestone v1.1 started
 Last activity: 2026-03-17 — Roadmap created; 62 requirements mapped to 4 phases
 
 Progress: [██████████] 100%

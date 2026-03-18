@@ -34,7 +34,17 @@ Players can place real-money bets on AI color choices with immediate, verifiable
 
 ### Active
 
-(None yet — define for next milestone)
+- [ ] End-to-end integration: frontend → on-chain program → oracle, all wired on devnet
+- [ ] Oracle deployed to Railway with configurable round timing (5-min devnet, 30-min mainnet)
+- [ ] Frontend deployed to Vercel pointing at devnet RPC
+- [ ] Complete game loop: connect wallet → place bet → watch resolution → claim winnings
+- [ ] Environment configuration for devnet vs mainnet (RPC endpoints, program ID, round timing)
+- [ ] IDL sync between program build output and frontend/oracle consumers
+- [ ] E2E smoke test of full season lifecycle on devnet
+
+## Current Milestone: v1.1 Playable Devnet
+
+**Goal:** Wire all three v1.0 subsystems together and deploy to devnet so a player can play a complete game end-to-end — place bets, watch the AI resolve rounds, claim winnings, and see a season progress.
 
 ### Out of Scope
 
@@ -90,4 +100,4 @@ Display font: Luckiest Guy. Body font: Nunito. Dark Void aesthetic (#14141f).
 | html-to-image over html2canvas | Better CSS variable and font handling for branded PNG share | ✓ Good |
 
 ---
-*Last updated: 2026-03-18 after v1.0 milestone*
+*Last updated: 2026-03-19 after v1.1 milestone start*
