@@ -18,12 +18,22 @@ export function useAnchorProgram(): Program | null {
   const wallet = useAnchorWallet();
 
   return useMemo(() => {
-    if (!wallet) return null;
+    if (!wallet) {
+      console.warn("[useAnchorProgram] No wallet connected");
+      return null;
+    }
 
-    const provider = new AnchorProvider(connection, wallet, {
-      commitment: "confirmed",
-    });
+    try {
+      const provider = new AnchorProvider(connection, wallet, {
+        commitment: "confirmed",
+      });
 
-    return new Program(idl as Idl, provider);
+      const program = new Program(idl as Idl, provider);
+      console.log("[useAnchorProgram] Program ready:", program.programId.toBase58());
+      return program;
+    } catch (err) {
+      console.error("[useAnchorProgram] Failed to create Program:", err);
+      return null;
+    }
   }, [wallet, connection]);
 }

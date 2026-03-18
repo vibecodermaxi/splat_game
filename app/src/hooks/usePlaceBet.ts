@@ -6,7 +6,7 @@ import { SystemProgram, LAMPORTS_PER_SOL } from "@solana/web3.js";
 import BN from "bn.js";
 import { useAnchorProgram } from "@/hooks/useAnchorProgram";
 import { useGameStore } from "@/store/gameStore";
-import { derivePixelPDA, deriveBetPDA, deriveStatsPDA } from "@/lib/pda";
+import { deriveSeasonPDA, derivePixelPDA, deriveBetPDA, deriveStatsPDA } from "@/lib/pda";
 import { PROGRAM_ID } from "@/lib/constants";
 
 export interface PlaceBetResult {
@@ -40,13 +40,23 @@ export function usePlaceBet(): PlaceBetResult {
       if (isSubmitting) return;
 
       // Guard: require wallet and program
-      if (!program || !wallet.publicKey) return;
+      if (!program || !wallet.publicKey) {
+        console.warn("[usePlaceBet] Guard failed — program:", !!program, "wallet:", wallet.publicKey?.toBase58() ?? "null");
+        return;
+      }
+
+      // Guard: season must be loaded from on-chain
+      if (seasonNumber === 0) {
+        setError("Season data not loaded yet. Please wait and try again.");
+        return;
+      }
 
       setIsSubmitting(true);
       setError(null);
 
       try {
         // Derive all PDAs
+        const [seasonPDA] = deriveSeasonPDA(PROGRAM_ID, seasonNumber);
         const [pixelPDA] = derivePixelPDA(PROGRAM_ID, seasonNumber, currentPixelIndex);
         const [betPDA] = deriveBetPDA(PROGRAM_ID, seasonNumber, currentPixelIndex, wallet.publicKey);
         const [statsPDA] = deriveStatsPDA(PROGRAM_ID, seasonNumber, wallet.publicKey);
@@ -55,9 +65,11 @@ export function usePlaceBet(): PlaceBetResult {
         const amountLamports = new BN(Math.floor(amountSol * LAMPORTS_PER_SOL));
 
         // Submit on-chain transaction
+        // IDL args: pixel_index (u16), color (u8), amount (u64)
         await (program.methods as any)
-          .placeBet(colorIndex, amountLamports)
+          .placeBet(currentPixelIndex, colorIndex, amountLamports)
           .accounts({
+            seasonState: seasonPDA,
             pixelState: pixelPDA,
             betAccount: betPDA,
             playerSeasonStats: statsPDA,
@@ -73,6 +85,9 @@ export function usePlaceBet(): PlaceBetResult {
           claimed: false,
         });
       } catch (err: unknown) {
+        console.error("[usePlaceBet] Transaction failed:", err);
+        console.error("[usePlaceBet] Program:", !!program, "Wallet:", wallet.publicKey?.toBase58());
+        console.error("[usePlaceBet] Season:", seasonNumber, "Pixel:", currentPixelIndex, "Color:", colorIndex, "Amount:", amountSol);
         const message =
           err instanceof Error ? err.message : "Transaction failed. Please try again.";
         setError(message);
