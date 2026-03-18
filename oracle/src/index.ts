@@ -30,10 +30,6 @@ import { buildSystemPrompt, buildUserMessage, buildFullPrompt } from "./prompt";
 import { startScheduler } from "./scheduler";
 import { logger } from "./logger";
 
-// Timing constants matching the round lifecycle
-const BETTING_WINDOW_MS = 28 * 60_000; // 28 minutes
-const LOCK_WINDOW_MS = 2 * 60_000;     // 2 minutes
-
 /**
  * Main oracle entry point.
  * Performs startup recovery, then starts the cron scheduler.
@@ -43,6 +39,10 @@ export async function main(): Promise<void> {
   // 1. Load configuration
   // -------------------------------------------------------------------------
   const config = loadConfig();
+
+  // Timing windows derived from config (not hardcoded)
+  const BETTING_WINDOW_MS = config.bettingWindowMinutes * 60_000;
+  const LOCK_WINDOW_MS = config.lockWindowMinutes * 60_000;
 
   // -------------------------------------------------------------------------
   // 2. Initialize all modules

@@ -16,6 +16,10 @@ export interface OracleConfig {
   seasonStyleSummary: string;
   telegramBotToken: string | undefined;
   telegramChatId: string | undefined;
+  roundDurationMinutes: number;    // Total round duration (default 30)
+  bettingWindowMinutes: number;    // Betting window (derived: roundDuration - 2)
+  lockWindowMinutes: number;       // Lock window (always 2 minutes)
+  cronSchedule: string;            // Cron expression derived from roundDurationMinutes
 }
 
 /**
@@ -71,6 +75,19 @@ export function loadConfig(): OracleConfig {
     process.exit(1);
   }
 
+  // Parse round duration — optional, defaults to 30 minutes
+  const roundDurationMinutes = parseInt(process.env.ROUND_DURATION_MINUTES || "30", 10);
+  if (isNaN(roundDurationMinutes) || roundDurationMinutes < 3) {
+    console.error("[oracle] Fatal: ROUND_DURATION_MINUTES must be >= 3");
+    process.exit(1);
+  }
+  const lockWindowMinutes = 2;
+  const bettingWindowMinutes = roundDurationMinutes - lockWindowMinutes;
+  const cronSchedule =
+    roundDurationMinutes <= 30
+      ? `*/${roundDurationMinutes} * * * *`
+      : `0,${roundDurationMinutes} * * * *`;
+
   // Optional Telegram configuration — warn but do not exit if missing
   const telegramBotToken = process.env.TELEGRAM_BOT_TOKEN || undefined;
   const telegramChatId = process.env.TELEGRAM_CHAT_ID || undefined;
@@ -91,5 +108,9 @@ export function loadConfig(): OracleConfig {
     seasonStyleSummary: process.env.SEASON_STYLE_SUMMARY || "",
     telegramBotToken,
     telegramChatId,
+    roundDurationMinutes,
+    bettingWindowMinutes,
+    lockWindowMinutes,
+    cronSchedule,
   };
 }
