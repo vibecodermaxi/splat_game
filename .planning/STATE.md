@@ -4,7 +4,7 @@ milestone: v1.1
 milestone_name: Playable Devnet
 status: planning
 stopped_at: Completed 05-wire-01-PLAN.md
-last_updated: "2026-03-18T20:00:49.702Z"
+last_updated: "2026-03-18T20:05:50.750Z"
 last_activity: 2026-03-19 — v1.1 roadmap created; 13 requirements mapped to 2 phases
 progress:
   total_phases: 2
