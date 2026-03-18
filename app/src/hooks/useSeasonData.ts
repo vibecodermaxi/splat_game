@@ -77,7 +77,7 @@ interface UseSeasonDataResult {
  *
  * Also fetches the player's BetAccount for the active pixel if wallet is connected.
  */
-export function useSeasonData(): UseSeasonDataResult {
+export function useSeasonData(initialSeasonNumber: number = 1): UseSeasonDataResult {
   const { connection } = useConnection();
   const program = useAnchorProgram();
   const wallet = useAnchorWallet();
@@ -99,8 +99,8 @@ export function useSeasonData(): UseSeasonDataResult {
       setError(null);
 
       try {
-        // --- 1. Fetch SeasonState (try season 1 by default) ---
-        const seasonNumber = 1;
+        // --- 1. Fetch SeasonState (use provided season number) ---
+        const seasonNumber = initialSeasonNumber;
         const [seasonPDA] = deriveSeasonPDA(PROGRAM_ID, seasonNumber);
         const seasonAccountInfo = await connection.getAccountInfo(seasonPDA);
         if (!seasonAccountInfo || cancelled) return;
