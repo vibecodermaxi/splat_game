@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Playable Devnet
 status: planning
-stopped_at: Completed 05-02-PLAN.md
-last_updated: "2026-03-18T19:58:01.228Z"
+stopped_at: Completed 05-wire-01-PLAN.md
+last_updated: "2026-03-18T20:00:49.702Z"
 last_activity: 2026-03-19 — v1.1 roadmap created; 13 requirements mapped to 2 phases
 progress:
   total_phases: 2
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 2
-  completed_plans: 1
+  completed_plans: 2
   percent: 67
 ---
 
@@ -55,6 +55,7 @@ Progress: [████████░░] 67% (4/6 phases complete — v1.0 shi
 
 *Updated after each plan completion*
 | Phase 05-wire P02 | 2 | 2 tasks | 3 files |
+| Phase 05-wire P01 | 4 | 2 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -70,6 +71,9 @@ Recent decisions affecting current work:
 - [v1.1]: Anchor program already deployed at FaVo1qzkbVt1uPwyU4jRZ7hgkJbYTzat8iqtPE3orxQG — no redeploy needed for devnet
 - [Phase 05-wire]: LOCKOUT_SECONDS stays hardcoded at 120 — protocol constant not a deployment config
 - [Phase 05-wire]: useSeasonData reads initialSeasonNumber as param not from store — store starts at 0 before hook runs, creating circular initialization
+- [Phase 05-wire]: IDL loaded via static import (import idl from './idl.json') — fails at compile time if missing
+- [Phase 05-wire]: oracle/src/idl.json gitignored — must run scripts/copy-idl.sh after anchor build
+- [Phase 05-wire]: ROUND_DURATION_MINUTES not in required[] array — has safe default of 30
 
 ### Pending Todos
 
@@ -82,6 +86,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-18T19:58:01.224Z
-Stopped at: Completed 05-02-PLAN.md
+Last session: 2026-03-18T20:00:49.700Z
+Stopped at: Completed 05-wire-01-PLAN.md
 Resume file: None
