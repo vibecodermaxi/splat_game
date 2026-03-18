@@ -375,7 +375,7 @@ async function main(): Promise<void> {
 
   let locked = false;
   const lockStart = Date.now();
-  const LOCK_WAIT_MAX_MS = 4 * 60 * 1000; // 4 minutes max wait for lock
+  const LOCK_WAIT_MAX_MS = 6 * 60 * 1000; // 6 minutes max wait (betting window is 80% of round)
 
   while (!locked) {
     checkTimeout("lock round (polling)");
@@ -401,9 +401,11 @@ async function main(): Promise<void> {
       if (
         msg.includes("cannot be locked") ||
         msg.includes("BettingWindowOpen") ||
+        msg.includes("LockoutNotReached") ||
         msg.includes("too early") ||
         msg.includes("0x1775") || // Anchor error codes
-        msg.includes("6005")
+        msg.includes("6005") ||
+        msg.includes("6019")
       ) {
         process.stdout.write(".");
         await sleep(POLL_INTERVAL_MS);
