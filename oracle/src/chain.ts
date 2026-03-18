@@ -1,6 +1,6 @@
 import * as anchor from "@coral-xyz/anchor";
 import { Connection, Keypair, PublicKey, SystemProgram } from "@solana/web3.js";
-import * as path from "path";
+import idl from "./idl.json";
 import type { OracleConfig } from "./config";
 import type { ClaudeResult, PixelData } from "./types";
 import { COLOR_NAMES } from "./types";
@@ -8,7 +8,7 @@ import { logger } from "./logger";
 
 // The PixelPredict type lives outside oracle/src/ (in target/types/pixel_predict.ts),
 // which conflicts with rootDir: "src" in tsconfig. We use anchor.Idl for the program
-// type to stay within rootDir boundaries while loading the actual IDL at runtime via require.
+// type to stay within rootDir boundaries. The IDL is loaded from the local copy at ./idl.json.
 
 // Switchboard On-Demand VRF program ID
 const SWITCHBOARD_RANDOMNESS_PROGRAM_ID = new PublicKey(
@@ -78,21 +78,6 @@ export class ChainClient {
     // Create connection and wallet
     this.connection = new Connection(config.solanaRpcUrl, "confirmed");
     this.oracleWallet = new anchor.Wallet(config.oracleKeypair);
-
-    // Load the IDL from the Anchor workspace
-    // Path: oracle/src/chain.ts -> ../../target/idl/pixel_predict.json
-    // (two levels up from oracle/src/ lands at project root)
-    const idlPath = path.resolve(__dirname, "../../target/idl/pixel_predict.json");
-    let idl: anchor.Idl;
-    try {
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
-      idl = require(idlPath) as anchor.Idl;
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      throw new Error(
-        `Failed to load Anchor IDL from ${idlPath}. Ensure the program has been built (anchor build).\n  Cause: ${message}`
-      );
-    }
 
     // Create Anchor provider and program client
     const provider = new anchor.AnchorProvider(
