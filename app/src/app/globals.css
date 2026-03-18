@@ -1,0 +1,420 @@
+@import "tailwindcss";
+
+
+/* Tailwind v4 theme extensions — brand colors from SPLAT_BRAND_IDENTITY.md */
+@theme {
+  /* Brand colors (UI chrome) */
+  --color-void: #14141f;
+  --color-surface: #1e1e2e;
+  --color-muted: #2a2a3e;
+  --color-splat-pink: #ff3b6f;
+  --color-splat-cyan: #3bdbff;
+  --color-splat-yellow: #ffd93b;
+  --color-splat-purple: #a83bff;
+  --color-splat-orange: #ff6b3b;
+  --color-splat-green: #3bff8a;
+
+  /* Font families mapping to CSS variables injected by next/font */
+  --font-family-display: var(--font-display), "Luckiest Guy", system-ui, cursive;
+  --font-family-body: var(--font-body), "Nunito", sans-serif;
+  --font-family-mono: var(--font-mono), "JetBrains Mono", monospace;
+}
+
+/* ============================================================
+   BASE STYLES
+   ============================================================ */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  background-color: #14141f;
+  color: #e0e0e0;
+  font-family: var(--font-family-body);
+  font-size: 15px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ============================================================
+   FONT UTILITY CLASSES
+   ============================================================ */
+
+.font-display {
+  font-family: var(--font-family-display);
+}
+
+.font-body {
+  font-family: var(--font-family-body);
+}
+
+.font-mono {
+  font-family: var(--font-family-mono);
+}
+
+/* ============================================================
+   HEADING TYPOGRAPHY
+   ============================================================ */
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-family-display);
+  font-weight: 700;
+  color: #fff;
+  line-height: 1.2;
+}
+
+h1 {
+  font-size: 2rem;
+}
+h2 {
+  font-size: 1.5rem;
+}
+h3 {
+  font-size: 1.25rem;
+}
+
+/* ============================================================
+   BUTTONS — min-height 44px, rounded, Fredoka uppercase
+   ============================================================ */
+
+button,
+.btn {
+  min-height: 44px;
+  border-radius: 10px;
+  font-family: var(--font-family-display);
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  cursor: pointer;
+  border: none;
+  outline: none;
+  transition: opacity 0.15s ease-out, transform 0.15s ease-out;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+button:disabled,
+.btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+button:not(:disabled):active,
+.btn:not(:disabled):active {
+  transform: scale(0.97);
+}
+
+/* Primary CTA gradient — Pink to Orange */
+.btn-primary {
+  background: linear-gradient(135deg, #ff3b6f, #ff6b3b);
+  color: #fff;
+  border-radius: 12px;
+  min-height: 52px;
+  font-size: 1.1rem;
+  width: 100%;
+}
+
+/* Claim/Win gradient — Cyan to Purple */
+.btn-claim {
+  background: linear-gradient(135deg, #3bdbff, #a83bff);
+  color: #fff;
+  border-radius: 12px;
+  min-height: 52px;
+  font-size: 1.1rem;
+  width: 100%;
+}
+
+/* Ghost button */
+.btn-ghost {
+  background: transparent;
+  border: 1px solid #444;
+  color: #3bdbff;
+  font-family: var(--font-family-body);
+  font-weight: 700;
+  text-transform: none;
+  letter-spacing: normal;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  min-height: 36px;
+}
+
+/* ============================================================
+   CARDS / PANELS
+   ============================================================ */
+
+.card,
+.panel {
+  background: #1e1e2e;
+  border-radius: 14px;
+  padding: 20px;
+}
+
+/* ============================================================
+   INPUT FIELDS
+   ============================================================ */
+
+input[type="text"],
+input[type="number"],
+input[type="email"] {
+  background: #1e1e2e;
+  border: 0.5px solid #333;
+  border-radius: 10px;
+  height: 44px;
+  padding: 0 12px;
+  color: #fff;
+  font-family: var(--font-family-body);
+  font-size: 1rem;
+  width: 100%;
+  outline: none;
+  transition: border-color 0.15s ease-out;
+  -moz-appearance: textfield;
+}
+
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input:focus {
+  border-color: #ff3b6f;
+}
+
+input::placeholder {
+  color: #666;
+}
+
+/* ============================================================
+   NUMBERS / AMOUNTS
+   ============================================================ */
+
+.number-display,
+.sol-amount {
+  font-family: var(--font-family-body);
+  font-weight: 700;
+  font-size: 1.1em;
+}
+
+/* Timer gets cyan color and 1.5x body size */
+.countdown-timer {
+  font-family: var(--font-family-body);
+  font-weight: 700;
+  font-size: 1.5rem;
+  color: #3bdbff;
+}
+
+/* Monospace for addresses and hashes */
+.address,
+.hash {
+  font-family: var(--font-family-mono);
+  font-size: 0.875rem;
+  color: #a0a0b0;
+}
+
+/* ============================================================
+   SCROLLBAR — thin, dark, Void aesthetic
+   ============================================================ */
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #14141f;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #2a2a3e;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #3a3a5e;
+}
+
+/* Firefox scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #2a2a3e #14141f;
+}
+
+/* ============================================================
+   CANVAS PIXEL ANIMATIONS
+   ============================================================ */
+
+/* Tooltip slide-in on mount */
+@keyframes tooltipFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Pixel cell fade-in on mount (resolved pixels) */
+@keyframes pixelFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.pixel-resolved {
+  animation: pixelFadeIn 150ms ease forwards;
+}
+
+/* Marching-ants border for the active pixel */
+@keyframes borderMarch {
+  to {
+    background-position: 100% 0, 0 100%, 0 0, 100% 100%;
+  }
+}
+
+.pixel-active {
+  background-image: repeating-linear-gradient(
+      90deg,
+      #ff3b6f 0,
+      #ff3b6f 4px,
+      transparent 4px,
+      transparent 8px
+    ),
+    repeating-linear-gradient(
+      180deg,
+      #ff3b6f 0,
+      #ff3b6f 4px,
+      transparent 4px,
+      transparent 8px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      #ff3b6f 0,
+      #ff3b6f 4px,
+      transparent 4px,
+      transparent 8px
+    ),
+    repeating-linear-gradient(
+      180deg,
+      #ff3b6f 0,
+      #ff3b6f 4px,
+      transparent 4px,
+      transparent 8px
+    );
+  background-size: 8px 2px, 2px 8px, 8px 2px, 2px 8px;
+  background-position: 0 0, 100% 0, 0 100%, 0 0;
+  background-repeat: repeat-x, repeat-y, repeat-x, repeat-y;
+  animation: borderMarch 0.5s linear infinite;
+}
+
+/* ============================================================
+   MOBILE RESPONSIVE
+   ============================================================ */
+
+/* At 375px: ensure canvas fills width minus 32px gutters */
+@media (max-width: 375px) {
+  body {
+    font-size: 14px;
+  }
+
+  h1 {
+    font-size: 1.75rem;
+  }
+  h2 {
+    font-size: 1.25rem;
+  }
+
+  /* Ensure all tappable targets remain 44px+ */
+  button,
+  .btn {
+    min-height: 44px;
+  }
+}
+
+/* At 768px+: slightly more padding, same single-column layout */
+@media (min-width: 768px) {
+  body {
+    font-size: 16px;
+  }
+}
+
+/* ============================================================
+   PREFERS-REDUCED-MOTION
+   ============================================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  /* Disable canvas animations */
+  .pixel-active {
+    animation: none;
+    /* Static pink border for active pixel when motion is reduced */
+    border: 2px solid #ff3b6f;
+    background-image: none;
+  }
+
+  .pixel-resolved {
+    animation: none;
+  }
+
+  /* Disable all Motion element transitions */
+  * {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+/* ============================================================
+   BETTING PANEL STATE — locked tint
+   ============================================================ */
+
+.panel-locked {
+  transition: background 300ms ease-out;
+}
+
+/* ============================================================
+   WALLET ADAPTER OVERRIDES
+   ============================================================ */
+
+.wallet-adapter-button {
+  min-height: 40px !important;
+  border-radius: 10px !important;
+  font-family: var(--font-family-display) !important;
+  font-size: 0.875rem !important;
+  letter-spacing: 0.05em !important;
+  background: linear-gradient(135deg, #ff3b6f, #ff6b3b) !important;
+}
+
+.wallet-adapter-button-trigger {
+  background: linear-gradient(135deg, #ff3b6f, #ff6b3b) !important;
+}
+
+.wallet-adapter-modal-wrapper {
+  background: #1e1e2e !important;
+  border-radius: 16px !important;
+}
+
+.wallet-adapter-modal-title {
+  font-family: var(--font-family-display) !important;
+  color: #fff !important;
+}
+
+.wallet-adapter-modal-list .wallet-adapter-button {
+  background: #2a2a3e !important;
+  border-radius: 10px !important;
+}
+
+.wallet-adapter-modal-list .wallet-adapter-button:hover {
+  background: #333350 !important;
+}
