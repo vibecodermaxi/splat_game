@@ -50,7 +50,7 @@ Plans:
   3. An admin can run a single CLI command to initialize a new season and see the oracle begin opening pixel rounds
   4. A player visiting the Vercel URL can connect a wallet, place a bet, watch the countdown, see the AI pick a color, and find the result in My Bets — all in one session
   5. The smoke test script runs to completion, prints "PASS", and the terminal shows a claimed SOL balance
-**Plans:** 2 plans
+**Plans:** 1/2 plans executed
 Plans:
 - [ ] 06-01-PLAN.md — Oracle health endpoint, Dockerfile, Vercel config, and Railway/Vercel deployment
 - [ ] 06-02-PLAN.md — E2E smoke test script and live deployment verification
@@ -64,4 +64,4 @@ Plans:
 | 3. Frontend Core | v1.0 | 4/4 | Complete | 2026-03-18 |
 | 4. Trust Layer and Docs | v1.0 | 5/5 | Complete | 2026-03-18 |
 | 5. Wire | v1.1 | 2/2 | Complete | 2026-03-18 |
-| 6. Deploy and Prove | v1.1 | 0/2 | Not started | - |
+| 6. Deploy and Prove | 1/2 | In Progress|  | - |

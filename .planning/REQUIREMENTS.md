@@ -18,13 +18,13 @@ Requirements for playable devnet milestone. Each maps to roadmap phases.
 
 ### Deployment
 
-- [ ] **DEP-01**: Oracle deployed to Railway with cron schedule, env vars (RPC URL, oracle wallet private key, Claude API key, Helius API key), and health check endpoint
-- [ ] **DEP-02**: Frontend deployed to Vercel with env vars (RPC URL, program ID, Helius WebSocket URL) and accessible at a public URL
+- [x] **DEP-01**: Oracle deployed to Railway with cron schedule, env vars (RPC URL, oracle wallet private key, Claude API key, Helius API key), and health check endpoint
+- [x] **DEP-02**: Frontend deployed to Vercel with env vars (RPC URL, program ID, Helius WebSocket URL) and accessible at a public URL
 - [x] **DEP-03**: Round timing is configurable via environment variable (5 minutes for devnet, 30 minutes for mainnet) without code changes — oracle cron schedule and frontend countdown both read this value
 
 ### Game Loop
 
-- [ ] **GAME-01**: Admin can initialize a new season on devnet via CLI script (start_season instruction) so the oracle begins opening rounds
+- [x] **GAME-01**: Admin can initialize a new season on devnet via CLI script (start_season instruction) so the oracle begins opening rounds
 - [ ] **GAME-02**: A player can complete a full round cycle through the UI: connect wallet → place bet → watch countdown → see AI resolution → view result in My Bets
 - [ ] **GAME-03**: Multiple rounds complete sequentially on devnet, canvas fills with resolved pixels, season progress indicator updates, player can bet on successive rounds
 - [ ] **GAME-04**: Semi-automated E2E smoke test script that initializes a season, places a bet, waits for resolution, verifies the bet resolved correctly, and claims winnings
@@ -49,10 +49,10 @@ Requirements for playable devnet milestone. Each maps to roadmap phases.
 | INT-04 | Phase 5 | Complete |
 | INT-05 | Phase 5 | Complete |
 | INT-06 | Phase 5 | Complete |
-| DEP-01 | Phase 6 | Pending |
-| DEP-02 | Phase 6 | Pending |
+| DEP-01 | Phase 6 | Complete |
+| DEP-02 | Phase 6 | Complete |
 | DEP-03 | Phase 5 | Complete |
-| GAME-01 | Phase 6 | Pending |
+| GAME-01 | Phase 6 | Complete |
 | GAME-02 | Phase 6 | Pending |
 | GAME-03 | Phase 6 | Pending |
 | GAME-04 | Phase 6 | Pending |

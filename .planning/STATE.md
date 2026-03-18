@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Playable Devnet
 status: planning
-stopped_at: Completed 05-wire-01-PLAN.md
-last_updated: "2026-03-18T20:05:50.750Z"
+stopped_at: "Checkpoint: 06-01 Task 3 — awaiting Railway and Vercel deployment from user"
+last_updated: "2026-03-18T20:20:49.180Z"
 last_activity: 2026-03-19 — v1.1 roadmap created; 13 requirements mapped to 2 phases
 progress:
   total_phases: 2
   completed_phases: 1
-  total_plans: 2
-  completed_plans: 2
+  total_plans: 4
+  completed_plans: 3
   percent: 67
 ---
 
@@ -56,6 +56,7 @@ Progress: [████████░░] 67% (4/6 phases complete — v1.0 shi
 *Updated after each plan completion*
 | Phase 05-wire P02 | 2 | 2 tasks | 3 files |
 | Phase 05-wire P01 | 4 | 2 tasks | 9 files |
+| Phase 06-deploy-and-prove P01 | 12 | 2 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -74,6 +75,9 @@ Recent decisions affecting current work:
 - [Phase 05-wire]: IDL loaded via static import (import idl from './idl.json') — fails at compile time if missing
 - [Phase 05-wire]: oracle/src/idl.json gitignored — must run scripts/copy-idl.sh after anchor build
 - [Phase 05-wire]: ROUND_DURATION_MINUTES not in required[] array — has safe default of 30
+- [Phase 06-deploy-and-prove]: Health server starts before recovery check so Railway health checks pass even during long startup recovery
+- [Phase 06-deploy-and-prove]: Dockerfile runs tsc inside container — idl.json must exist via copy-idl.sh before docker build since it's gitignored
+- [Phase 06-deploy-and-prove]: dotenv installed at root so scripts/devnet-setup.ts resolves oracle/.env without needing oracle node_modules on PATH
 
 ### Pending Todos
 
@@ -86,6 +90,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-18T20:00:49.700Z
-Stopped at: Completed 05-wire-01-PLAN.md
+Last session: 2026-03-18T20:20:49.178Z
+Stopped at: Checkpoint: 06-01 Task 3 — awaiting Railway and Vercel deployment from user
 Resume file: None
