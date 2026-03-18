@@ -2,7 +2,13 @@
  * Devnet setup script — calls initialize_config and start_season
  * so the oracle can begin driving rounds.
  *
- * Usage: npx tsx scripts/devnet-setup.ts
+ * Usage: npx tsx scripts/devnet-setup.ts [options]
+ *
+ * Options:
+ *   --season N       Season number to initialize (default: 1)
+ *   --grid WxH       Grid dimensions (default: 10x10)
+ *   --fund-oracle    Airdrop 2 SOL to oracle wallet on devnet before setup
+ *   --help           Print this usage message and exit
  *
  * Requires oracle/.env to be configured with:
  *   SOLANA_RPC_URL, ORACLE_KEYPAIR, PROGRAM_ID
@@ -12,11 +18,81 @@ import * as dotenv from "dotenv";
 import * as anchor from "@coral-xyz/anchor";
 import { Connection, Keypair, PublicKey, SystemProgram } from "@solana/web3.js";
 import * as path from "path";
+import { execSync } from "child_process";
 
 // Load env from oracle/.env
 dotenv.config({ path: path.resolve(__dirname, "../oracle/.env") });
 
+// ---------------------------------------------------------------------------
+// Argument parsing
+// ---------------------------------------------------------------------------
+
+function parseArgs() {
+  const args = process.argv.slice(2);
+
+  if (args.includes("--help") || args.includes("-h")) {
+    console.log(`
+Usage: npx tsx scripts/devnet-setup.ts [options]
+
+Options:
+  --season N       Season number to initialize (default: 1)
+  --grid WxH       Grid dimensions e.g. 10x10 (default: 10x10)
+  --fund-oracle    Airdrop 2 SOL to oracle wallet before setup
+  --help           Print this usage message and exit
+
+Examples:
+  npx tsx scripts/devnet-setup.ts
+  npx tsx scripts/devnet-setup.ts --season 2 --grid 20x20
+  npx tsx scripts/devnet-setup.ts --season 1 --fund-oracle
+`.trim());
+    process.exit(0);
+  }
+
+  let seasonNumber = 1;
+  let gridWidth = 10;
+  let gridHeight = 10;
+  let fundOracle = false;
+
+  for (let i = 0; i < args.length; i++) {
+    if (args[i] === "--season" && args[i + 1]) {
+      const n = parseInt(args[i + 1], 10);
+      if (isNaN(n) || n < 1) {
+        console.error("--season must be a positive integer");
+        process.exit(1);
+      }
+      seasonNumber = n;
+      i++;
+    } else if (args[i] === "--grid" && args[i + 1]) {
+      const parts = args[i + 1].split("x");
+      if (parts.length !== 2) {
+        console.error("--grid must be in WxH format, e.g. 10x10");
+        process.exit(1);
+      }
+      gridWidth = parseInt(parts[0], 10);
+      gridHeight = parseInt(parts[1], 10);
+      if (isNaN(gridWidth) || isNaN(gridHeight) || gridWidth < 1 || gridHeight < 1) {
+        console.error("--grid dimensions must be positive integers");
+        process.exit(1);
+      }
+      i++;
+    } else if (args[i] === "--fund-oracle") {
+      fundOracle = true;
+    } else {
+      console.error(`Unknown argument: ${args[i]}\nRun with --help for usage.`);
+      process.exit(1);
+    }
+  }
+
+  return { seasonNumber, gridWidth, gridHeight, fundOracle };
+}
+
+// ---------------------------------------------------------------------------
+// Main
+// ---------------------------------------------------------------------------
+
 async function main() {
+  const { seasonNumber, gridWidth, gridHeight, fundOracle } = parseArgs();
+
   // Validate required env vars
   const requiredVars = ["SOLANA_RPC_URL", "ORACLE_KEYPAIR", "PROGRAM_ID"];
   const missing = requiredVars.filter((k) => !process.env[k]);
@@ -30,7 +106,8 @@ async function main() {
     Uint8Array.from(JSON.parse(process.env.ORACLE_KEYPAIR!))
   );
   const programId = new PublicKey(process.env.PROGRAM_ID!);
-  const connection = new Connection(process.env.SOLANA_RPC_URL!, "confirmed");
+  const rpcUrl = process.env.SOLANA_RPC_URL!;
+  const connection = new Connection(rpcUrl, "confirmed");
   const wallet = new anchor.Wallet(adminKeypair);
   const provider = new anchor.AnchorProvider(connection, wallet, {
     commitment: "confirmed",
@@ -40,16 +117,30 @@ async function main() {
   const idl = require("../oracle/src/idl.json") as anchor.Idl;
   const program = new anchor.Program<anchor.Idl>(idl, provider);
 
-  console.log("Program ID:", programId.toBase58());
-  console.log("Admin/Oracle:", adminKeypair.publicKey.toBase58());
+  // ---------------------------------------------------------------------------
+  // Optional: fund oracle wallet via airdrop
+  // ---------------------------------------------------------------------------
+  if (fundOracle) {
+    console.log(`Funding oracle wallet ${adminKeypair.publicKey.toBase58()} with 2 SOL...`);
+    try {
+      execSync(
+        `solana airdrop 2 ${adminKeypair.publicKey.toBase58()} --url ${rpcUrl}`,
+        { stdio: "inherit" }
+      );
+      console.log("Airdrop successful.");
+    } catch (err) {
+      console.warn("Airdrop failed (may be rate-limited). Continuing...");
+    }
+  }
 
+  // ---------------------------------------------------------------------------
   // Derive PDAs
+  // ---------------------------------------------------------------------------
   const [configPda] = PublicKey.findProgramAddressSync(
     [Buffer.from("config")],
     programId
   );
 
-  const seasonNumber = 1;
   const seasonBuf = Buffer.alloc(2);
   seasonBuf.writeUInt16LE(seasonNumber, 0);
   const [seasonPda] = PublicKey.findProgramAddressSync(
@@ -57,7 +148,9 @@ async function main() {
     programId
   );
 
-  // Check if config already exists
+  // ---------------------------------------------------------------------------
+  // initialize_config (idempotent)
+  // ---------------------------------------------------------------------------
   const configInfo = await connection.getAccountInfo(configPda);
   if (configInfo) {
     console.log("Config PDA already exists, skipping initialize_config.");
@@ -74,14 +167,16 @@ async function main() {
     console.log("initialize_config tx:", tx1);
   }
 
-  // Check if season already exists
+  // ---------------------------------------------------------------------------
+  // start_season (idempotent)
+  // ---------------------------------------------------------------------------
   const seasonInfo = await connection.getAccountInfo(seasonPda);
   if (seasonInfo) {
-    console.log("Season 1 already exists, skipping start_season.");
+    console.log(`Season ${seasonNumber} already exists, skipping start_season.`);
   } else {
-    console.log("Calling start_season...");
+    console.log(`Calling start_season (season=${seasonNumber}, grid=${gridWidth}x${gridHeight})...`);
     const tx2 = await program.methods
-      .startSeason(seasonNumber, 10, 10)
+      .startSeason(seasonNumber, gridWidth, gridHeight)
       .accounts({
         seasonState: seasonPda,
         config: configPda,
@@ -92,10 +187,20 @@ async function main() {
     console.log("start_season tx:", tx2);
   }
 
-  console.log("\nDevnet setup complete!");
-  console.log("Config PDA:", configPda.toBase58());
-  console.log("Season PDA:", seasonPda.toBase58());
-  console.log("\nYou can now start the oracle: cd oracle && npx tsx src/index.ts");
+  // ---------------------------------------------------------------------------
+  // Summary
+  // ---------------------------------------------------------------------------
+  console.log(`
+=== Devnet Setup Complete ===
+Program ID:  ${programId.toBase58()}
+Config PDA:  ${configPda.toBase58()}
+Season PDA:  ${seasonPda.toBase58()}
+Season:      ${seasonNumber}
+Grid:        ${gridWidth}x${gridHeight}
+Oracle:      ${adminKeypair.publicKey.toBase58()}
+
+Next: Start the oracle with \`cd oracle && npm run dev\`
+`);
 }
 
 main().catch((err) => {
