@@ -88,71 +88,37 @@ export function useSeasonData(initialSeasonNumber: number = 1): UseSeasonDataRes
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [hasFetched, setHasFetched] = useState(false);
 
-  // Fetch season + pixel data (public, no wallet needed) — runs ONCE when program is available
+  // Fetch season + pixel data, then poll every 10s for updates
   useEffect(() => {
-    if (hasFetched) return;
+    if (!program) return;
 
     let cancelled = false;
+    let pollInterval: ReturnType<typeof setInterval> | null = null;
 
-    async function fetchPublicData() {
-      setLoading(true);
-      setError(null);
-
+    async function fetchData() {
       try {
-        // --- 1. Fetch SeasonState ---
         const seasonNumber = initialSeasonNumber;
         const [seasonPDA] = deriveSeasonPDA(PROGRAM_ID, seasonNumber);
-        console.log("[useSeasonData] RPC endpoint:", connection.rpcEndpoint);
-        console.log("[useSeasonData] Program ID:", PROGRAM_ID.toBase58());
-        console.log("[useSeasonData] Season PDA derived:", seasonPDA.toBase58(), "for season", seasonNumber);
         const seasonAccountInfo = await connection.getAccountInfo(seasonPDA);
-        console.log("[useSeasonData] getAccountInfo result:", seasonAccountInfo ? `${seasonAccountInfo.data.length} bytes` : "null");
-        if (!seasonAccountInfo || cancelled) {
-          console.warn("[useSeasonData] Season account not found on-chain for season", seasonNumber);
-          return;
-        }
+        if (!seasonAccountInfo || cancelled) return;
 
-        // Decode using program coder if available, otherwise use raw AccountInfo
-        if (!program) {
-          console.log("[useSeasonData] No program yet — setting season number only");
-          if (!cancelled) setSeasonState(seasonNumber, 0);
-          return;
-        }
+        // Manual decode (browser Anchor coder has issues)
+        const data = seasonAccountInfo.data;
+        const view = new DataView(data.buffer, data.byteOffset, data.byteLength);
+        const sn = view.getUint16(8, true);
+        const cpi = view.getUint16(12, true);
 
-        // Try program.coder first, fall back to manual decode
-        let decodedSeason: { currentPixelIndex: number; seasonNumber: number };
-        try {
-          decodedSeason = program.coder.accounts.decode("SeasonState", seasonAccountInfo.data) as {
-            currentPixelIndex: number;
-            seasonNumber: number;
-          };
-        } catch (decodeErr) {
-          console.warn("[useSeasonData] program.coder.decode failed, trying manual decode:", decodeErr);
-          // Manual decode: skip 8-byte discriminator, then read fields per IDL
-          // SeasonState layout: disc(8) + season_number(u16) + grid_width(u8) + grid_height(u8) + current_pixel_index(u16) + ...
-          const data = seasonAccountInfo.data;
-          const view = new DataView(data.buffer, data.byteOffset, data.byteLength);
-          const sn = view.getUint16(8, true);  // offset 8, little-endian
-          // grid_width(1) + grid_height(1) at offset 10-11
-          const cpi = view.getUint16(12, true); // offset 12
-          decodedSeason = { seasonNumber: sn, currentPixelIndex: cpi };
-          console.log("[useSeasonData] Manual decode:", decodedSeason);
-        }
-
-        const currentPixelIndex = decodedSeason.currentPixelIndex;
-        console.log("[useSeasonData] Loaded season", seasonNumber, "pixel", currentPixelIndex);
         if (!cancelled) {
-          setSeasonState(seasonNumber, currentPixelIndex);
+          useGameStore.getState().setSeasonState(sn, cpi);
         }
 
-        // --- 2. Batch-fetch all pixel states (0 to currentPixelIndex) ---
-        const pixelIndices = Array.from({ length: currentPixelIndex + 1 }, (_, i) => i);
-        const pixelPDAs = pixelIndices.map((i) => derivePixelPDA(PROGRAM_ID, seasonNumber, i)[0]);
+        // Batch-fetch all pixel states (0 to currentPixelIndex)
+        const pixelIndices = Array.from({ length: cpi + 1 }, (_, i) => i);
+        const pixelPDAs = pixelIndices.map((i) => derivePixelPDA(PROGRAM_ID, sn, i)[0]);
 
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const pixelAccounts = await (program.account as any)["pixelState"].fetchMultiple(pixelPDAs);
+        const pixelAccounts = await (program!.account as any)["pixelState"].fetchMultiple(pixelPDAs);
 
         if (cancelled) return;
 
@@ -160,25 +126,30 @@ export function useSeasonData(initialSeasonNumber: number = 1): UseSeasonDataRes
         (pixelAccounts as any[]).forEach((decoded: unknown, idx: number) => {
           if (decoded) {
             const snapshot = decodePixelState(decoded as Record<string, unknown>, pixelIndices[idx]);
-            setPixelState(pixelIndices[idx], snapshot);
+            useGameStore.getState().setPixelState(pixelIndices[idx], snapshot);
           }
         });
-        if (!cancelled) setHasFetched(true);
       } catch (err) {
-        console.error("[useSeasonData] Failed to load:", err);
         if (!cancelled) {
-          setError(err instanceof Error ? err.message : "Failed to load season data");
+          console.error("[useSeasonData] Fetch error:", err);
         }
       } finally {
         if (!cancelled) setLoading(false);
       }
     }
 
-    void fetchPublicData();
+    // Initial fetch
+    fetchData();
 
-    return () => { cancelled = true; };
+    // Poll every 10 seconds for round state changes
+    pollInterval = setInterval(fetchData, 10_000);
+
+    return () => {
+      cancelled = true;
+      if (pollInterval) clearInterval(pollInterval);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [program, connection, hasFetched]);
+  }, [program]);
 
   // Fetch player's BetAccount (requires wallet)
   useEffect(() => {
