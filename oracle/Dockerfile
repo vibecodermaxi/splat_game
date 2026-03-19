@@ -12,6 +12,7 @@ COPY package.json package-lock.json ./
 RUN npm ci
 COPY tsconfig.json ./
 COPY src/ ./src/
+COPY config/ ./config/
 RUN npx tsc
 RUN npm prune --omit=dev
 ENV PORT=3000
