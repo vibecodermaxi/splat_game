@@ -36,8 +36,10 @@ export function usePlaceBet(): PlaceBetResult {
 
   const placeBet = useCallback(
     async (colorIndex: number, amountSol: number) => {
+      console.log("[usePlaceBet] called:", { colorIndex, amountSol, isSubmitting, program: !!program, wallet: wallet.publicKey?.toBase58(), seasonNumber, currentPixelIndex });
+
       // Guard: prevent double-submit (Pitfall 6)
-      if (isSubmitting) return;
+      if (isSubmitting) { console.warn("[usePlaceBet] Blocked: already submitting"); return; }
 
       // Guard: require wallet and program
       if (!program || !wallet.publicKey) {
@@ -53,6 +55,7 @@ export function usePlaceBet(): PlaceBetResult {
 
       setIsSubmitting(true);
       setError(null);
+      console.log("[usePlaceBet] Submitting transaction...");
 
       try {
         // Derive all PDAs

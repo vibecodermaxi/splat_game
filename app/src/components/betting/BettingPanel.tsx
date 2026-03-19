@@ -68,6 +68,7 @@ export function BettingPanel() {
   const [lastError, setLastError] = useState<string | null>(null);
   useEffect(() => {
     if (error) {
+      console.error("[BettingPanel] Raw error from hook:", error);
       setLastError(mapError(error));
       clearError();
     }
