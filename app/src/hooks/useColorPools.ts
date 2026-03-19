@@ -37,74 +37,62 @@ export function computePoolPercent(colorPool: number, totalPool: number): string
  */
 export function useColorPools() {
   const program = useAnchorProgram();
-  const { seasonNumber, currentPixelIndex, setPixelState, pixels } = useGameStore();
+  const seasonNumber = useGameStore((s) => s.seasonNumber);
+  const currentPixelIndex = useGameStore((s) => s.currentPixelIndex);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  const fetchPools = useCallback(async () => {
-    if (!program) return;
-
-    try {
-      const [pixelPDA] = derivePixelPDA(PROGRAM_ID, seasonNumber, currentPixelIndex);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const pixelState = await (program.account as any).pixelState.fetch(pixelPDA);
-
-      // Convert BN[] to number[] (safe for SOL amounts under 9007 SOL)
-      const colorPools: number[] = (pixelState.colorPools as Array<{ toNumber: () => number }>).map(
-        (bn) => bn.toNumber()
-      );
-      const totalPool = colorPools.reduce((sum, v) => sum + v, 0);
-
-      // Get existing pixel snapshot or build a minimal one
-      const existing = pixels[currentPixelIndex];
-      setPixelState(currentPixelIndex, {
-        pixelIndex: currentPixelIndex,
-        colorIndex: existing?.colorIndex ?? 0,
-        shade: existing?.shade ?? 50,
-        warmth: existing?.warmth ?? 50,
-        status: existing?.status ?? "open",
-        colorPools,
-        totalPool,
-        openedAtSeconds: existing?.openedAtSeconds ?? null,
-        winningColor: existing?.winningColor ?? null,
-        vrfResolved: existing?.vrfResolved ?? false,
-        promptHash: existing?.promptHash ?? null,
-        arweaveTxid: existing?.arweaveTxid ?? null,
-        hasArweaveTxid: existing?.hasArweaveTxid ?? false,
-      });
-    } catch {
-      // Silently ignore fetch errors — stale data is acceptable
-    }
-  }, [program, seasonNumber, currentPixelIndex, pixels, setPixelState]);
-
-  const startInterval = useCallback(() => {
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-    }
-    intervalRef.current = setInterval(fetchPools, POOL_REFRESH_INTERVAL_MS);
-  }, [fetchPools]);
+  const hasFetchedRef = useRef(false);
 
   useEffect(() => {
-    // Initial fetch on mount
-    fetchPools();
-    startInterval();
+    if (!program || seasonNumber === 0) return;
 
-    // Re-fetch on tab visibility change to visible, reset interval
-    const handleVisibility = () => {
-      if (document.visibilityState === "visible") {
-        fetchPools();
-        startInterval();
+    const fetchPools = async () => {
+      try {
+        const [pixelPDA] = derivePixelPDA(PROGRAM_ID, seasonNumber, currentPixelIndex);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const pixelState = await (program.account as any).pixelState.fetch(pixelPDA);
+
+        const colorPools: number[] = (pixelState.colorPools as Array<{ toNumber: () => number }>).map(
+          (bn) => bn.toNumber()
+        );
+        const totalPool = colorPools.reduce((sum, v) => sum + v, 0);
+
+        const existing = useGameStore.getState().pixels[currentPixelIndex];
+        useGameStore.getState().setPixelState(currentPixelIndex, {
+          pixelIndex: currentPixelIndex,
+          colorIndex: existing?.colorIndex ?? 0,
+          shade: existing?.shade ?? 50,
+          warmth: existing?.warmth ?? 50,
+          status: existing?.status ?? "open",
+          colorPools,
+          totalPool,
+          openedAtSeconds: existing?.openedAtSeconds ?? null,
+          winningColor: existing?.winningColor ?? null,
+          vrfResolved: existing?.vrfResolved ?? false,
+          promptHash: existing?.promptHash ?? null,
+          arweaveTxid: existing?.arweaveTxid ?? null,
+          hasArweaveTxid: existing?.hasArweaveTxid ?? false,
+        });
+      } catch {
+        // Silently ignore — stale data is acceptable
       }
     };
 
-    document.addEventListener("visibilitychange", handleVisibility);
+    // Fetch once on mount, then every 60s
+    if (!hasFetchedRef.current) {
+      hasFetchedRef.current = true;
+      fetchPools();
+    }
+
+    intervalRef.current = setInterval(fetchPools, POOL_REFRESH_INTERVAL_MS);
 
     return () => {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
       }
-      document.removeEventListener("visibilitychange", handleVisibility);
     };
-  }, [fetchPools, startInterval]);
+    // Only re-run when program becomes available or pixel changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [program, seasonNumber, currentPixelIndex]);
 
   return { computeMultiplier, computePoolPercent };
 }

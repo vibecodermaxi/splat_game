@@ -21,7 +21,7 @@ export function CountdownTimer() {
   const activePixelData = pixels[currentPixelIndex] ?? null;
   const openedAtSeconds = activePixelData?.openedAtSeconds ?? null;
 
-  const { secondsLeft, isLocked, isFinalDrama, minutesDisplay, secondsDisplay } =
+  const { secondsLeft, isLocked, isFinalDrama, roundNotOpen, minutesDisplay, secondsDisplay } =
     useCountdown(openedAtSeconds);
 
   const prevSecondsRef = useRef(secondsLeft);
@@ -37,6 +37,25 @@ export function CountdownTimer() {
     : isLocked
     ? "#FFD93B" // Splat Yellow — warning
     : "#3BDBFF"; // Splat Cyan — normal
+
+  // Round not yet opened by oracle — PixelState PDA doesn't exist on-chain
+  if (roundNotOpen) {
+    return (
+      <div style={{ textAlign: "center", padding: "8px 0" }}>
+        <motion.span
+          animate={{ opacity: [1, 0.5, 1] }}
+          transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+          style={{
+            color: "#3BDBFF",
+            fontWeight: 700,
+            fontSize: "1rem",
+          }}
+        >
+          Waiting for next round...
+        </motion.span>
+      </div>
+    );
+  }
 
   if (isThinking) {
     return (

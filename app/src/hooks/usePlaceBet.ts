@@ -53,6 +53,13 @@ export function usePlaceBet(): PlaceBetResult {
         return;
       }
 
+      // Guard: pixel state must exist on-chain (round must be opened by oracle)
+      const activePixel = useGameStore.getState().pixels[currentPixelIndex];
+      if (!activePixel || activePixel.openedAtSeconds === null) {
+        setError("Round not open yet. Waiting for the oracle to start the next round.");
+        return;
+      }
+
       setIsSubmitting(true);
       setError(null);
       console.log("[usePlaceBet] Submitting transaction...");

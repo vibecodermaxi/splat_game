@@ -13,7 +13,8 @@ export const ROUND_DURATION_SECONDS = parseInt(
   process.env.NEXT_PUBLIC_ROUND_DURATION_SECONDS || "1800",
   10
 );
-export const LOCKOUT_SECONDS = 120; // final 2 minutes — always fixed
+// Lockout = 20% of round duration (2 min for 30-min rounds, 1 min for 5-min rounds)
+export const LOCKOUT_SECONDS = Math.floor(ROUND_DURATION_SECONDS * 0.2);
 export const BETTING_WINDOW_SECONDS = ROUND_DURATION_SECONDS - LOCKOUT_SECONDS;
 
 // Polling / WebSocket intervals (in milliseconds)

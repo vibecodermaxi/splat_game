@@ -7,6 +7,8 @@ export interface CountdownResult {
   secondsLeft: number;
   isLocked: boolean;
   isFinalDrama: boolean;
+  /** True when the round has not been opened yet (no openedAtSeconds) */
+  roundNotOpen: boolean;
   minutesDisplay: string;
   secondsDisplay: string;
 }
@@ -49,6 +51,7 @@ export function useCountdown(openedAtSeconds: number | null): CountdownResult {
   // Only active when there is an open round (openedAtSeconds !== null)
   const isLocked = openedAtSeconds !== null && secondsLeft <= LOCKOUT_SECONDS;
   const isFinalDrama = secondsLeft <= 10 && secondsLeft > 0;
+  const roundNotOpen = openedAtSeconds === null;
   const minutesDisplay = String(Math.floor(secondsLeft / 60)).padStart(2, "0");
   const secondsDisplay = String(secondsLeft % 60).padStart(2, "0");
 
@@ -56,6 +59,7 @@ export function useCountdown(openedAtSeconds: number | null): CountdownResult {
     secondsLeft,
     isLocked,
     isFinalDrama,
+    roundNotOpen,
     minutesDisplay,
     secondsDisplay,
   };

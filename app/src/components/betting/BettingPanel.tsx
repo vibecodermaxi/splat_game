@@ -40,7 +40,7 @@ export function BettingPanel() {
   const colorPools = activePixelData?.colorPools ?? Array(16).fill(0);
   const totalPool = activePixelData?.totalPool ?? 0;
 
-  const { isLocked } = useCountdown(openedAtSeconds);
+  const { isLocked, roundNotOpen } = useCountdown(openedAtSeconds);
   const { computeMultiplier, computePoolPercent } = useColorPools();
   const { placeBet, isSubmitting, error, clearError } = usePlaceBet();
 
@@ -55,7 +55,9 @@ export function BettingPanel() {
 
   // Map Anchor/wallet errors to user-friendly messages
   const mapError = (raw: string): string => {
-    if (raw.includes("BettingClosed") || raw.includes("betting_closed"))
+    if (raw.includes("AccountNotInitialized"))
+      return "Waiting for the next round to open. Try again in a moment.";
+    if (raw.includes("BettingClosed") || raw.includes("BettingLocked") || raw.includes("betting_closed") || raw.includes("betting_locked"))
       return "Bets are locked for this round.";
     if (raw.includes("InsufficientFunds") || raw.includes("insufficient"))
       return "Not enough SOL in your wallet.";
@@ -108,10 +110,10 @@ export function BettingPanel() {
 
   // Determine button state and appearance
   const noColorSelected = effectiveSelectedColor === null;
-  const isActionDisabled = isLocked || isSubmitting || noColorSelected || betAmount < MIN_BET_SOL;
+  const isActionDisabled = roundNotOpen || isLocked || isSubmitting || noColorSelected || betAmount < MIN_BET_SOL;
 
   const buttonBg = (() => {
-    if (isLocked) return "#2A2A3E";
+    if (roundNotOpen || isLocked) return "#2A2A3E";
     if (effectiveSelectedColor !== null) {
       return BASE_HEX[COLOR_NAMES[effectiveSelectedColor]];
     }
@@ -120,6 +122,7 @@ export function BettingPanel() {
   })();
 
   const buttonLabel = (() => {
+    if (roundNotOpen) return "Waiting for next round...";
     if (isLocked) return "Locked. The AI is thinking...";
     if (isSubmitting) return "Splatting...";
     if (noColorSelected) return "Pick a color";
@@ -132,9 +135,9 @@ export function BettingPanel() {
   return (
     <div
       id="betting-panel"
-      className={isLocked ? "panel-locked" : ""}
+      className={isLocked || roundNotOpen ? "panel-locked" : ""}
       style={{
-        background: isLocked
+        background: isLocked || roundNotOpen
           ? "linear-gradient(rgba(255, 59, 111, 0.08), rgba(255, 59, 111, 0.08)), #1E1E2E"
           : "#1E1E2E",
         borderRadius: "16px",
@@ -194,7 +197,7 @@ export function BettingPanel() {
           <BetInput
             value={betAmount}
             onChange={setBetAmount}
-            disabled={isLocked || isSubmitting}
+            disabled={roundNotOpen || isLocked || isSubmitting}
           />
         </div>
       )}
@@ -221,13 +224,13 @@ export function BettingPanel() {
             borderRadius: "12px",
             border: "none",
             background: buttonBg,
-            color: isLocked ? "#888" : "#fff",
+            color: isLocked || roundNotOpen ? "#888" : "#fff",
             fontFamily: "var(--font-family-display)",
             fontSize: "1.1rem",
             letterSpacing: "0.05em",
             textTransform: "uppercase",
             cursor: isActionDisabled ? "not-allowed" : "pointer",
-            opacity: isActionDisabled && !isLocked ? 0.6 : 1,
+            opacity: isActionDisabled && !isLocked && !roundNotOpen ? 0.6 : 1,
             transition: "background 0.2s ease-out, opacity 0.2s",
             display: "flex",
             alignItems: "center",
@@ -318,7 +321,7 @@ export function BettingPanel() {
             {(playerBet.amount / 1e9).toFixed(3)} SOL
           </p>
 
-          {!isLocked && (
+          {!isLocked && !roundNotOpen && (
             <button
               type="button"
               onClick={() => {

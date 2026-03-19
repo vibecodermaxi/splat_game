@@ -43,8 +43,8 @@ export default function Home() {
     currentPixelIndex,
   );
 
-  // Wire Helius WebSocket for live on-chain updates
-  useHeliusSocket({ pixelPDA, seasonPDA, seasonNumber: seasonNumber || 1 });
+  // TODO: Re-enable after fixing PDA reference stability and browser decode
+  // useHeliusSocket({ pixelPDA, seasonPDA, seasonNumber: seasonNumber || 1 });
 
   // My Bets drawer state
   const [myBetsOpen, setMyBetsOpen] = useState(false);

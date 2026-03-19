@@ -81,13 +81,19 @@ export function useSeasonData(initialSeasonNumber: number = 1): UseSeasonDataRes
   const { connection } = useConnection();
   const program = useAnchorProgram();
   const wallet = useAnchorWallet();
-  const { setSeasonState, setPixelState, setPlayerBet } = useGameStore();
+  // Get stable references to store actions (won't change between renders)
+  const setSeasonState = useGameStore((s) => s.setSeasonState);
+  const setPixelState = useGameStore((s) => s.setPixelState);
+  const setPlayerBet = useGameStore((s) => s.setPlayerBet);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [hasFetched, setHasFetched] = useState(false);
 
-  // Fetch season + pixel data (public, no wallet needed)
+  // Fetch season + pixel data (public, no wallet needed) — runs ONCE when program is available
   useEffect(() => {
+    if (hasFetched) return;
+
     let cancelled = false;
 
     async function fetchPublicData() {
@@ -157,6 +163,7 @@ export function useSeasonData(initialSeasonNumber: number = 1): UseSeasonDataRes
             setPixelState(pixelIndices[idx], snapshot);
           }
         });
+        if (!cancelled) setHasFetched(true);
       } catch (err) {
         console.error("[useSeasonData] Failed to load:", err);
         if (!cancelled) {
@@ -170,7 +177,8 @@ export function useSeasonData(initialSeasonNumber: number = 1): UseSeasonDataRes
     void fetchPublicData();
 
     return () => { cancelled = true; };
-  }, [program, connection, initialSeasonNumber, setSeasonState, setPixelState]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [program, connection, hasFetched]);
 
   // Fetch player's BetAccount (requires wallet)
   useEffect(() => {
@@ -214,7 +222,8 @@ export function useSeasonData(initialSeasonNumber: number = 1): UseSeasonDataRes
 
     void fetchBet();
     return () => { cancelled = true; };
-  }, [program, connection, wallet?.publicKey, initialSeasonNumber, setPlayerBet]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [program, wallet?.publicKey]);
 
   return { loading, error };
 }
