@@ -98,7 +98,11 @@ export function useSeasonData(initialSeasonNumber: number = 1): UseSeasonDataRes
         // --- 1. Fetch SeasonState ---
         const seasonNumber = initialSeasonNumber;
         const [seasonPDA] = deriveSeasonPDA(PROGRAM_ID, seasonNumber);
+        console.log("[useSeasonData] RPC endpoint:", connection.rpcEndpoint);
+        console.log("[useSeasonData] Program ID:", PROGRAM_ID.toBase58());
+        console.log("[useSeasonData] Season PDA derived:", seasonPDA.toBase58(), "for season", seasonNumber);
         const seasonAccountInfo = await connection.getAccountInfo(seasonPDA);
+        console.log("[useSeasonData] getAccountInfo result:", seasonAccountInfo ? `${seasonAccountInfo.data.length} bytes` : "null");
         if (!seasonAccountInfo || cancelled) {
           console.warn("[useSeasonData] Season account not found on-chain for season", seasonNumber);
           return;
@@ -106,17 +110,30 @@ export function useSeasonData(initialSeasonNumber: number = 1): UseSeasonDataRes
 
         // Decode using program coder if available, otherwise use raw AccountInfo
         if (!program) {
-          // Without program we can't decode, but we can still set season number
-          // so place_bet guard passes. Pixel data requires program coder.
           console.log("[useSeasonData] No program yet — setting season number only");
           if (!cancelled) setSeasonState(seasonNumber, 0);
           return;
         }
 
-        const decodedSeason = program.coder.accounts.decode("SeasonState", seasonAccountInfo.data) as {
-          currentPixelIndex: number;
-          seasonNumber: number;
-        };
+        // Try program.coder first, fall back to manual decode
+        let decodedSeason: { currentPixelIndex: number; seasonNumber: number };
+        try {
+          decodedSeason = program.coder.accounts.decode("SeasonState", seasonAccountInfo.data) as {
+            currentPixelIndex: number;
+            seasonNumber: number;
+          };
+        } catch (decodeErr) {
+          console.warn("[useSeasonData] program.coder.decode failed, trying manual decode:", decodeErr);
+          // Manual decode: skip 8-byte discriminator, then read fields per IDL
+          // SeasonState layout: disc(8) + season_number(u16) + grid_width(u8) + grid_height(u8) + current_pixel_index(u16) + ...
+          const data = seasonAccountInfo.data;
+          const view = new DataView(data.buffer, data.byteOffset, data.byteLength);
+          const sn = view.getUint16(8, true);  // offset 8, little-endian
+          // grid_width(1) + grid_height(1) at offset 10-11
+          const cpi = view.getUint16(12, true); // offset 12
+          decodedSeason = { seasonNumber: sn, currentPixelIndex: cpi };
+          console.log("[useSeasonData] Manual decode:", decodedSeason);
+        }
 
         const currentPixelIndex = decodedSeason.currentPixelIndex;
         console.log("[useSeasonData] Loaded season", seasonNumber, "pixel", currentPixelIndex);
