@@ -216,8 +216,19 @@ export async function runRound(ctx: OracleContext): Promise<void> {
   // 6. Hash prompt
   const promptHash = hashPrompt(fullPrompt);
 
-  // 7. Open current round on-chain
-  await ctx.chain.openRoundForSeason(seasonNumber, pixelIndex, Array.from(promptHash));
+  // 7. Open current round on-chain — skip if already open (e.g., pre-opened by previous round)
+  const existingPixelState = await ctx.chain.getPixelState(seasonNumber, pixelIndex);
+  if (!existingPixelState) {
+    await ctx.chain.openRoundForSeason(seasonNumber, pixelIndex, Array.from(promptHash));
+  } else {
+    logger.info({
+      event: "open_round_skipped",
+      seasonNumber,
+      pixelIndex,
+      status: existingPixelState.status,
+      reason: "already exists (pre-opened by previous round)",
+    });
+  }
 
   // 8. Pre-open next round (N+1) if not the last pixel
   const totalPixels = gridWidth * gridHeight;
