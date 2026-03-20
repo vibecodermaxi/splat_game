@@ -18,9 +18,14 @@ function decodePixelState(decoded: Record<string, unknown>, pixelIndex: number):
   else if (statusRaw.resolved !== undefined) status = "resolved";
 
   const colorPools = decoded.colorPools as (number | bigint)[] | null ?? new Array(16).fill(0);
-  const totalPool = typeof decoded.totalPool === "bigint"
-    ? Number(decoded.totalPool)
-    : (decoded.totalPool as number) ?? 0;
+  const rawTotalPool = decoded.totalPool;
+  const totalPool = typeof rawTotalPool === "bigint"
+    ? Number(rawTotalPool)
+    : typeof rawTotalPool === "number"
+    ? rawTotalPool
+    : rawTotalPool && typeof (rawTotalPool as any).toNumber === "function"
+    ? (rawTotalPool as any).toNumber()
+    : 0;
 
   const shade = decoded.shade as number | null ?? 50;
   const warmth = decoded.warmth as number | null ?? 50;
@@ -55,7 +60,13 @@ function decodePixelState(decoded: Record<string, unknown>, pixelIndex: number):
     shade,
     warmth,
     status,
-    colorPools: colorPools.map((v) => (typeof v === "bigint" ? Number(v) : v)),
+    colorPools: colorPools.map((v) => {
+      if (typeof v === "bigint") return Number(v);
+      if (typeof v === "number") return v;
+      // BN objects from Anchor have toNumber()
+      if (v && typeof (v as any).toNumber === "function") return (v as any).toNumber();
+      return Number(v) || 0;
+    }),
     totalPool,
     openedAtSeconds,
     winningColor,
