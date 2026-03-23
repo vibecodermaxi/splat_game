@@ -274,18 +274,36 @@ export async function runRound(ctx: OracleContext): Promise<void> {
   // 11. Wait 2 minutes (lockout window)
   await sleepFn(LOCK_WINDOW_MS);
 
-  // 12. Resolve via Claude (with failure cascade)
-  const result = await callClaudeWithFallback(
-    ctx,
-    systemPrompt,
-    userMessage,
-    seasonNumber,
-    pixelIndex
-  );
+  // 12. Resolve — check for rigged mode first, then Claude with fallback
+  const riggedColor = process.env.RIGGED_COLOR;
+  let result: ResolutionResult;
+
+  if (riggedColor !== undefined) {
+    // Test mode: skip Claude, always resolve with the rigged color
+    const riggedIndex = parseInt(riggedColor, 10);
+    const { COLOR_NAMES } = await import("./types");
+    const colorName = COLOR_NAMES[riggedIndex] ?? "Red";
+    logger.info({ event: "rigged_resolve", pixelIndex, colorIndex: riggedIndex, colorName });
+    result = {
+      colorIndex: riggedIndex,
+      colorName,
+      shade: 50,
+      warmth: 50,
+      reasoning: "RIGGED FOR TESTING",
+      vrfResolved: false,
+    };
+  } else {
+    result = await callClaudeWithFallback(
+      ctx,
+      systemPrompt,
+      userMessage,
+      seasonNumber,
+      pixelIndex
+    );
+  }
 
   // 13. Post result on-chain (VRF path already posts itself in resolveViaVrf)
   if (!result.vrfResolved) {
-    // result is a ClaudeResult with vrfResolved=false
     const claudeResult = result as Exclude<ResolutionResult, { vrfResolved: true }>;
     await ctx.chain.resolveRound(seasonNumber, pixelIndex, {
       colorIndex: claudeResult.colorIndex,
