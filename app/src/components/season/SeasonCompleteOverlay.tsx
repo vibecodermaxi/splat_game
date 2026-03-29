@@ -88,7 +88,7 @@ export function SeasonCompleteOverlay({
   );
   const totalPoolSol = (totalPool / 1_000_000_000).toFixed(4);
 
-  // Render pixel cells for the 10x10 grid
+  // Render pixel cells for the grid
   const cellSize = Math.min(Math.floor((Math.min(400, window?.innerWidth ?? 400) - 16) / GRID_SIZE), 40);
 
   const motionProps = reducedMotion
@@ -194,7 +194,7 @@ export function SeasonCompleteOverlay({
               marginBottom: "4px",
             }}
           >
-            100 rounds
+            {TOTAL_PIXELS} rounds
           </p>
           <p
             style={{

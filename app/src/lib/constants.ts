@@ -4,8 +4,8 @@ export const PROGRAM_ID = new PublicKey(
   "FaVo1qzkbVt1uPwyU4jRZ7hgkJbYTzat8iqtPE3orxQG"
 );
 
-export const GRID_SIZE = 10;
-export const TOTAL_PIXELS = 100;
+export const GRID_SIZE = 20;
+export const TOTAL_PIXELS = 400;
 
 // Timing constants (in seconds) — configurable via env var
 // Set NEXT_PUBLIC_ROUND_DURATION_SECONDS in app/.env.local (default: 1800 = 30 min)
@@ -13,8 +13,8 @@ export const ROUND_DURATION_SECONDS = parseInt(
   process.env.NEXT_PUBLIC_ROUND_DURATION_SECONDS || "1800",
   10
 );
-// Lockout = 20% of round duration (2 min for 30-min rounds, 1 min for 5-min rounds)
-export const LOCKOUT_SECONDS = Math.floor(ROUND_DURATION_SECONDS * 0.2);
+// Lockout = last 2 minutes of round (matches oracle's lockWindowMinutes)
+export const LOCKOUT_SECONDS = 120;
 export const BETTING_WINDOW_SECONDS = ROUND_DURATION_SECONDS - LOCKOUT_SECONDS;
 
 // Polling / WebSocket intervals (in milliseconds)

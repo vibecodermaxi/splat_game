@@ -27,8 +27,8 @@ export default function FaqPage() {
         </ExpandableSection>
 
         <ExpandableSection title="How long is a season?">
-          100 rounds, one per pixel in the 10x10 grid. At 30 minutes per round, a season takes
-          about 50 hours.
+          400 rounds, one per pixel in the 20x20 grid. At 30 minutes per round, a season takes
+          about a week.
         </ExpandableSection>
 
         <ExpandableSection title="What's the jackpot?">

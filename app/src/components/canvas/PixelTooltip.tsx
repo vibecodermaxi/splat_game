@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { COLOR_NAMES } from "@/lib/color";
+import { COLOR_NAMES, BASE_HEX } from "@/lib/color";
 import type { PixelSnapshot } from "@/types/game";
 
 interface PixelTooltipProps {
@@ -11,7 +11,7 @@ interface PixelTooltipProps {
   onDismiss: () => void;
 }
 
-const TOOLTIP_WIDTH = 200;
+const TOOLTIP_WIDTH = 220;
 const TOOLTIP_MARGIN = 8;
 
 function clampToViewport(
@@ -25,19 +25,15 @@ function clampToViewport(
   let left = x + TOOLTIP_MARGIN;
   let top = y + TOOLTIP_MARGIN;
 
-  // Clamp right edge
   if (left + TOOLTIP_WIDTH > vw - TOOLTIP_MARGIN) {
     left = x - TOOLTIP_WIDTH - TOOLTIP_MARGIN;
   }
-  // Clamp bottom edge
   if (top + tooltipHeight > vh - TOOLTIP_MARGIN) {
     top = y - tooltipHeight - TOOLTIP_MARGIN;
   }
-  // Clamp left edge
   if (left < TOOLTIP_MARGIN) {
     left = TOOLTIP_MARGIN;
   }
-  // Clamp top edge
   if (top < TOOLTIP_MARGIN) {
     top = TOOLTIP_MARGIN;
   }
@@ -45,12 +41,10 @@ function clampToViewport(
   return { left, top };
 }
 
-/** Convert a number[] (byte array) to a lowercase hex string */
 function bytesToHex(bytes: number[]): string {
   return bytes.map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
-/** Truncate a hex string: first 8 + "..." + last 8 chars */
 function truncateHex(hex: string): string {
   if (hex.length <= 16) return hex;
   return `${hex.slice(0, 8)}...${hex.slice(-8)}`;
@@ -60,17 +54,15 @@ export function PixelTooltip({ pixelIndex, data, position, onDismiss }: PixelToo
   const tooltipRef = useRef<HTMLDivElement>(null);
   const [proofExpanded, setProofExpanded] = useState(false);
   const [tooltipPos, setTooltipPos] = useState(() =>
-    clampToViewport(position.x, position.y, 160)
+    clampToViewport(position.x, position.y, 180)
   );
 
   const colorName = COLOR_NAMES[data.colorIndex] ?? "Unknown";
+  const colorHex = BASE_HEX[colorName] ?? "#888";
   const isResolved = data.status === "resolved";
-
-  // Build hex string for prompt hash
   const promptHashHex = data.promptHash ? bytesToHex(data.promptHash) : null;
   const promptHashDisplay = promptHashHex ? truncateHex(promptHashHex) : null;
 
-  // Re-clamp after render (dynamic height)
   useEffect(() => {
     const el = tooltipRef.current;
     if (el) {
@@ -79,7 +71,6 @@ export function PixelTooltip({ pixelIndex, data, position, onDismiss }: PixelToo
     }
   }, [position.x, position.y, proofExpanded]);
 
-  // Animate in on mount via CSS keyframe
   useEffect(() => {
     const el = tooltipRef.current;
     if (el) {
@@ -87,7 +78,6 @@ export function PixelTooltip({ pixelIndex, data, position, onDismiss }: PixelToo
     }
   }, []);
 
-  // Dismiss on click-away
   useEffect(() => {
     const handleClickAway = (e: MouseEvent) => {
       if (tooltipRef.current && !tooltipRef.current.contains(e.target as Node)) {
@@ -110,40 +100,67 @@ export function PixelTooltip({ pixelIndex, data, position, onDismiss }: PixelToo
         left: tooltipPos.left,
         top: tooltipPos.top,
         width: TOOLTIP_WIDTH,
-        background: "#1E1E2E",
-        borderRadius: 12,
-        padding: 12,
-        boxShadow: "0 8px 24px rgba(0,0,0,0.5)",
-        border: "1px solid #2A2A3E",
+        background: "linear-gradient(170deg, #1E1E2E 0%, #1a1a28 100%)",
+        borderRadius: 14,
+        padding: 0,
+        boxShadow: `0 8px 24px rgba(0,0,0,0.5), 0 0 12px 2px ${colorHex}20`,
+        border: `1px solid ${colorHex}30`,
         zIndex: 100,
         pointerEvents: "auto",
+        overflow: "hidden",
       }}
     >
-      {/* Color name + VRF badge */}
+      {/* Color bar header */}
       <div
         style={{
-          fontFamily: "var(--font-family-display, Fredoka One, cursive)",
-          fontSize: 14,
-          fontWeight: 700,
-          color: "#e0e0e0",
-          marginBottom: 6,
+          background: colorHex,
+          padding: "10px 12px 8px",
           display: "flex",
           alignItems: "center",
-          gap: 6,
+          gap: 8,
         }}
       >
-        {colorName}
+        {/* Brush icon */}
+        <span style={{ fontSize: "1rem", lineHeight: 1, filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.3))" }}>
+          🖌️
+        </span>
+
+        <div style={{ flex: 1 }}>
+          <div
+            style={{
+              fontFamily: "var(--font-family-display)",
+              fontSize: "0.95rem",
+              fontWeight: 700,
+              color: "#fff",
+              textShadow: "0 1px 3px rgba(0,0,0,0.4)",
+              letterSpacing: "0.02em",
+              lineHeight: 1.2,
+            }}
+          >
+            {colorName}
+          </div>
+          <div
+            style={{
+              fontSize: "0.65rem",
+              color: "rgba(255,255,255,0.7)",
+              fontWeight: 600,
+              fontFamily: "var(--font-family-body, 'Nunito', sans-serif)",
+            }}
+          >
+            Pixel #{pixelIndex + 1}
+          </div>
+        </div>
+
         {data.vrfResolved && (
           <span
             style={{
-              fontSize: 10,
-              background: "#3BDBFF22",
-              color: "#3BDBFF",
-              border: "1px solid #3BDBFF55",
+              fontSize: 9,
+              background: "rgba(255,255,255,0.2)",
+              color: "#fff",
               borderRadius: 4,
-              padding: "1px 4px",
+              padding: "2px 5px",
               fontFamily: "var(--font-family-mono, JetBrains Mono, monospace)",
-              fontWeight: 500,
+              fontWeight: 600,
             }}
           >
             VRF
@@ -151,136 +168,141 @@ export function PixelTooltip({ pixelIndex, data, position, onDismiss }: PixelToo
         )}
       </div>
 
-      {/* Shade / Warmth / Round */}
-      <div
-        style={{
-          fontSize: 12,
-          color: "#a0a0b0",
-          lineHeight: 1.6,
-        }}
-      >
-        <div>Shade: {data.shade}</div>
-        <div>Warmth: {data.warmth}</div>
-        <div>Round {pixelIndex + 1}</div>
-      </div>
+      {/* Body */}
+      <div style={{ padding: "10px 12px 12px" }}>
+        {/* Artist note — italic handwriting feel */}
+        <p
+          style={{
+            fontFamily: "var(--font-family-body, 'Nunito', sans-serif)",
+            fontStyle: "italic",
+            fontSize: "0.75rem",
+            color: "#b0b0c0",
+            lineHeight: 1.5,
+            margin: "0 0 8px",
+            borderLeft: `2px solid ${colorHex}60`,
+            paddingLeft: 8,
+          }}
+        >
+          {data.vrfResolved
+            ? "Chosen by verifiable randomness — the AI was taking a nap."
+            : `The AI chose ${colorName} for this pixel, guided by the canvas so far.`}
+        </p>
 
-      {/* Verified fair badge — only for resolved pixels */}
-      {isResolved && (
-        <div style={{ marginTop: 8 }}>
-          {data.vrfResolved ? (
-            <span
-              style={{
-                fontSize: 11,
-                color: "#ED8936",
-                fontWeight: 600,
-                display: "flex",
-                alignItems: "center",
-                gap: 4,
-              }}
-            >
-              <span aria-hidden="true">&#x21BA;</span>
-              Resolved via random fallback
-            </span>
-          ) : (
-            <span
-              data-testid="verified-fair-badge"
-              style={{
-                fontSize: 11,
-                color: "#3BDBFF",
-                fontWeight: 600,
-                display: "flex",
-                alignItems: "center",
-                gap: 4,
-              }}
-            >
-              <span aria-hidden="true">&#10003;</span>
-              Verified fair
-            </span>
-          )}
+        {/* Verified fair / proof */}
+        {isResolved && (
+          <div>
+            {data.vrfResolved ? (
+              <span
+                style={{
+                  fontSize: 11,
+                  color: "#ED8936",
+                  fontWeight: 600,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 4,
+                }}
+              >
+                <span aria-hidden="true">&#x21BA;</span>
+                Random fallback
+              </span>
+            ) : (
+              <span
+                data-testid="verified-fair-badge"
+                style={{
+                  fontSize: 11,
+                  color: "#3BDBFF",
+                  fontWeight: 600,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 4,
+                }}
+              >
+                <span aria-hidden="true">&#10003;</span>
+                Verified fair
+              </span>
+            )}
 
-          {/* View proof toggle */}
-          {promptHashHex && (
-            <button
-              onClick={() => setProofExpanded((prev) => !prev)}
-              style={{
-                marginTop: 6,
-                background: "none",
-                border: "none",
-                color: "#6b7280",
-                fontSize: 11,
-                cursor: "pointer",
-                padding: 0,
-                textDecoration: "underline",
-                fontFamily: "inherit",
-              }}
-            >
-              {proofExpanded ? "Hide proof" : "View proof"}
-            </button>
-          )}
+            {promptHashHex && (
+              <button
+                onClick={() => setProofExpanded((prev) => !prev)}
+                style={{
+                  marginTop: 6,
+                  background: "none",
+                  border: "none",
+                  color: "#6b7280",
+                  fontSize: 10,
+                  cursor: "pointer",
+                  padding: 0,
+                  textDecoration: "underline",
+                  fontFamily: "inherit",
+                  minHeight: "auto",
+                }}
+              >
+                {proofExpanded ? "Hide proof" : "View proof"}
+              </button>
+            )}
 
-          {/* Expandable proof section */}
-          {proofExpanded && promptHashHex && (
-            <div
-              style={{
-                marginTop: 8,
-                paddingTop: 8,
-                borderTop: "1px solid #2A2A3E",
-                fontSize: 11,
-                color: "#a0a0b0",
-                lineHeight: 1.6,
-              }}
-            >
-              {/* Prompt hash */}
-              <div>
-                <span style={{ color: "#6b7280" }}>Prompt commitment proof</span>
-                <div
-                  data-testid="prompt-hash-hex"
-                  style={{
-                    fontFamily: "var(--font-family-mono, JetBrains Mono, monospace)",
-                    fontSize: 10,
-                    color: "#e0e0e0",
-                    marginTop: 2,
-                    wordBreak: "break-all",
-                  }}
-                >
-                  {promptHashDisplay}
-                </div>
-              </div>
-
-              {/* Arweave link */}
-              {data.arweaveTxid && (
-                <div style={{ marginTop: 6 }}>
-                  <a
-                    href={`https://arweave.net/${data.arweaveTxid}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
+            {proofExpanded && promptHashHex && (
+              <div
+                style={{
+                  marginTop: 8,
+                  paddingTop: 8,
+                  borderTop: "1px solid #2A2A3E",
+                  fontSize: 10,
+                  color: "#a0a0b0",
+                  lineHeight: 1.6,
+                }}
+              >
+                <div>
+                  <span style={{ color: "#6b7280" }}>Prompt hash</span>
+                  <div
+                    data-testid="prompt-hash-hex"
                     style={{
-                      color: "#3BDBFF",
-                      textDecoration: "underline",
-                      fontSize: 11,
+                      fontFamily: "var(--font-family-mono, JetBrains Mono, monospace)",
+                      fontSize: 9,
+                      color: "#e0e0e0",
+                      marginTop: 2,
+                      wordBreak: "break-all",
                     }}
                   >
-                    View prompt on Arweave
-                  </a>
+                    {promptHashDisplay}
+                  </div>
                 </div>
-              )}
 
-              {/* VRF explanation note */}
-              {data.vrfResolved && (
-                <div
-                  style={{
-                    marginTop: 6,
-                    color: "#a0a0b0",
-                    fontStyle: "italic",
-                  }}
-                >
-                  This pixel was resolved using Switchboard VRF (verifiable random function) because the AI was unavailable.
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      )}
+                {data.arweaveTxid && (
+                  <div style={{ marginTop: 6 }}>
+                    <a
+                      href={`https://arweave.net/${data.arweaveTxid}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{
+                        color: "#3BDBFF",
+                        textDecoration: "underline",
+                        fontSize: 10,
+                      }}
+                    >
+                      View prompt on Arweave
+                    </a>
+                  </div>
+                )}
+
+                {data.vrfResolved && (
+                  <div
+                    style={{
+                      marginTop: 6,
+                      color: "#a0a0b0",
+                      fontStyle: "italic",
+                      fontSize: 10,
+                    }}
+                  >
+                    Resolved via Switchboard VRF because the AI was unavailable.
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

@@ -5,7 +5,7 @@
  * - sleep(ms): simple await-based delay
  * - OracleContext: aggregates all dependencies for a round
  * - callClaudeWithFallback: 3-tier failure cascade (3x30s, 6x5min, VRF)
- * - runRound: full round lifecycle (open → wait → lock → wait → resolve → log)
+ * - tick(ctx): stateless polling ticker — reads chain state, does one action, returns
  */
 
 import { createHash } from "crypto";
@@ -52,8 +52,7 @@ export interface OracleContext {
 // ---------------------------------------------------------------------------
 
 /**
- * Simple Promise-based delay. Used for retry back-off in callClaudeWithFallback
- * and for timing in runRound (betting window, lockout window).
+ * Simple Promise-based delay. Used for retry back-off in callClaudeWithFallback.
  */
 export function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -158,223 +157,289 @@ export async function callClaudeWithFallback(
 }
 
 // ---------------------------------------------------------------------------
-// runRound — full round lifecycle
+// tick — stateless polling state machine
 // ---------------------------------------------------------------------------
 
-const BETTING_WINDOW_MS = 28 * 60_000; // 28 minutes
-const LOCK_WINDOW_MS = 2 * 60_000;     // 2 minutes
+/** Overlap protection — prevents concurrent ticks (Claude calls can take 30+ min) */
+let _tickBusy = false;
+let _tickStartedAt = 0;
+const TICK_STALE_MS = 45 * 60_000; // 45 minutes — longer than worst-case Claude fallback cascade
+
+/** Reset busy flag (for tests only) */
+export function _resetTickBusy(): void {
+  _tickBusy = false;
+  _tickStartedAt = 0;
+}
 
 /**
- * Execute a complete round lifecycle for the current pixel:
+ * State-machine ticker. Each tick reads on-chain state, does one action, returns.
+ * No separate recovery flow — the tick IS the recovery.
  *
- *   1. Read season state from chain
- *   2. Compute pixel coordinates
- *   3. Read canvas state (all resolved pixels up to this pixel)
- *   4. Read round history
- *   5. Build system prompt, user message, full prompt
- *   6. Hash prompt (commit for on-chain storage)
- *   7. Open round on-chain (current pixel)
- *   8. Pre-open next round (N+1) if not last pixel
- *   9. Wait 28 minutes (betting window)
- *  10. Lock round on-chain (skip if already locked)
- *  11. Wait 2 minutes (lockout window)
- *  12. Resolve via callClaudeWithFallback
- *  13. Post result on-chain (skipped if VRF path — VRF path posts itself)
- *  14. Update round history
- *  15. Log round result
- *  16. Send success alert
- *
- * @param ctx Oracle context with all injected dependencies
+ * State machine:
+ *   PixelState = null          → open_round + pre-open N+1
+ *   status=open,  <28min       → noop (betting window)
+ *   status=open,  ≥28min       → lock_round
+ *   status=locked, <2min       → noop (lockout)
+ *   status=locked, ≥2min       → call Claude + resolve_round + arweave + history
+ *   status=resolved, no arweave → upload to Arweave (safety net)
+ *   status=resolved, has arweave → noop (round complete)
  */
-export async function runRound(ctx: OracleContext): Promise<void> {
-  const sleepFn = ctx._testHooks?.sleep ?? sleep;
-
-  // 1. Read season state
-  const seasonState = await ctx.chain.getSeasonState(ctx.config.currentSeason);
-  const { seasonNumber, gridWidth, gridHeight, currentPixelIndex } = seasonState;
-  const pixelIndex = currentPixelIndex;
-
-  // 2. Compute pixel coordinates
-  const x = pixelIndex % gridWidth;
-  const y = Math.floor(pixelIndex / gridWidth);
-
-  // 3. Read canvas state — all resolved pixels up to current pixel
-  const canvasPixels = await ctx.chain.getAllResolvedPixels(seasonNumber, pixelIndex);
-
-  // 4. Read round history
-  const history = await ctx.history.read();
-
-  // 5. Build prompts
-  const systemPrompt = buildSystemPrompt(
-    gridWidth,
-    gridHeight,
-    ctx.config.seasonStyleSummary
-  );
-  const userMessage = buildUserMessage(canvasPixels, x, y, gridWidth, gridHeight, history);
-  const fullPrompt = buildFullPrompt(systemPrompt, userMessage);
-
-  // 6. Hash prompt
-  const promptHash = hashPrompt(fullPrompt);
-
-  // 7. Open current round on-chain — skip if already open (e.g., pre-opened by previous round)
-  const existingPixelState = await ctx.chain.getPixelState(seasonNumber, pixelIndex);
-  if (!existingPixelState) {
-    await ctx.chain.openRoundForSeason(seasonNumber, pixelIndex, Array.from(promptHash));
-  } else {
-    logger.info({
-      event: "open_round_skipped",
-      seasonNumber,
-      pixelIndex,
-      status: existingPixelState.status,
-      reason: "already exists (pre-opened by previous round)",
-    });
-  }
-
-  // 8. Pre-open next round (N+1) if not the last pixel
-  const totalPixels = gridWidth * gridHeight;
-  if (pixelIndex + 1 < totalPixels) {
-    try {
-      // Build a placeholder prompt hash for N+1 — real prompt constructed when that round runs
-      const placeholderText = `placeholder-${seasonNumber}-${pixelIndex + 1}`;
-      const placeholderHash = createHash("sha256")
-        .update(Buffer.from(placeholderText, "utf8"))
-        .digest();
-      await ctx.chain.openRoundForSeason(
-        seasonNumber,
-        pixelIndex + 1,
-        Array.from(placeholderHash)
-      );
-    } catch {
-      // N+1 may already exist — this is expected and not an error
-      logger.info({
-        event: "preopen_next_skipped",
-        seasonNumber,
-        pixelIndex: pixelIndex + 1,
-        reason: "already exists or other non-fatal error",
-      });
+export async function tick(ctx: OracleContext): Promise<void> {
+  if (_tickBusy) {
+    // Auto-reset if previous tick has been running longer than TICK_STALE_MS
+    if (Date.now() - _tickStartedAt > TICK_STALE_MS) {
+      logger.warn({ event: "tick_stale_reset", staleSinceMs: Date.now() - _tickStartedAt });
+      _tickBusy = false;
+    } else {
+      logger.info({ event: "tick_skipped", reason: "busy" });
+      return;
     }
   }
+  _tickBusy = true;
+  _tickStartedAt = Date.now();
+  try {
+    await _tickInner(ctx);
+  } finally {
+    _tickBusy = false;
+  }
+}
 
-  // 9. Wait 28 minutes (betting window)
-  await sleepFn(BETTING_WINDOW_MS);
+async function _tickInner(ctx: OracleContext): Promise<void> {
+  const { config, chain } = ctx;
 
-  // 10. Lock round — skip if already locked
-  const pixelState = await ctx.chain.getPixelState(seasonNumber, pixelIndex);
-  if (!pixelState || pixelState.status === "open") {
-    await ctx.chain.lockRound(seasonNumber, pixelIndex);
-  } else {
-    logger.info({
-      event: "lock_skipped",
-      seasonNumber,
-      pixelIndex,
-      status: pixelState?.status ?? "unknown",
-    });
+  // Read season state
+  const seasonState = await chain.getSeasonState(config.currentSeason);
+  const { seasonNumber, gridWidth, gridHeight, currentPixelIndex } = seasonState;
+  const pixelIndex = currentPixelIndex;
+  const totalPixels = gridWidth * gridHeight;
+
+  // Season completion guard
+  if (pixelIndex >= totalPixels) {
+    logger.info({ event: "tick_noop", reason: "season_complete", seasonNumber, pixelIndex, totalPixels });
+    return;
   }
 
-  // 11. Wait 2 minutes (lockout window)
-  await sleepFn(LOCK_WINDOW_MS);
+  // Read pixel state
+  const pixelState = await chain.getPixelState(seasonNumber, pixelIndex);
 
-  // 12. Resolve — check for rigged mode first, then Claude with fallback
-  const riggedColor = process.env.RIGGED_COLOR;
-  let result: ResolutionResult;
-
-  if (riggedColor !== undefined) {
-    // Test mode: skip Claude, always resolve with the rigged color
-    const riggedIndex = parseInt(riggedColor, 10);
-    const { COLOR_NAMES } = await import("./types");
-    const colorName = COLOR_NAMES[riggedIndex] ?? "Red";
-    logger.info({ event: "rigged_resolve", pixelIndex, colorIndex: riggedIndex, colorName });
-    result = {
-      colorIndex: riggedIndex,
-      colorName,
-      shade: 50,
-      warmth: 50,
-      reasoning: "RIGGED FOR TESTING",
-      vrfResolved: false,
-    };
-  } else {
-    result = await callClaudeWithFallback(
-      ctx,
-      systemPrompt,
-      userMessage,
-      seasonNumber,
-      pixelIndex
-    );
-  }
-
-  // 13. Post result on-chain (VRF path already posts itself in resolveViaVrf)
-  if (!result.vrfResolved) {
-    const claudeResult = result as Exclude<ResolutionResult, { vrfResolved: true }>;
-    await ctx.chain.resolveRound(seasonNumber, pixelIndex, {
-      colorIndex: claudeResult.colorIndex,
-      colorName: claudeResult.colorName,
-      shade: claudeResult.shade,
-      warmth: claudeResult.warmth,
-      reasoning: claudeResult.reasoning ?? "",
-    });
-  }
-
-  // 13.5. Non-blocking Arweave upload (after on-chain resolution)
-  const txid = await uploadToArweave(
-    fullPrompt,
-    ctx.config.oracleKeypair,
-    ctx.config.solanaRpcUrl
-  ).catch((err) => {
-    logger.warn({
-      event: "arweave_upload_failed",
-      pixelIndex,
-      error: err instanceof Error ? err.message : String(err),
-    });
-    ctx.alerts.sendArweaveFailure(pixelIndex, err instanceof Error ? err.message : String(err)).catch(() => {});
-    return null;
-  });
-  if (txid) {
-    await ctx.chain.setArweaveTxid(seasonNumber, pixelIndex, txid).catch((err) => {
-      logger.warn({
-        event: "arweave_txid_write_failed",
-        pixelIndex,
-        txid,
-        error: err instanceof Error ? err.message : String(err),
-      });
-    });
-  }
-
-  // 14. Update round history
-  const historyEntry: RoundHistoryEntry = {
-    pixelIndex,
-    x,
-    y,
-    color: result.vrfResolved
-      ? `color-${result.colorIndex}`
-      : (result as Exclude<ResolutionResult, { vrfResolved: true }>).colorName,
-    shade: result.shade,
-    warmth: result.warmth,
-    reasoning: result.vrfResolved
-      ? "VRF fallback — Claude was unavailable for 30+ minutes"
-      : (result as Exclude<ResolutionResult, { vrfResolved: true }>).reasoning ?? "",
-  };
-  await ctx.history.push(historyEntry);
-
-  // 15. Log round result
   logger.info({
-    event: "round_complete",
+    event: "tick_start",
     seasonNumber,
     pixelIndex,
-    x,
-    y,
-    colorIndex: result.colorIndex,
-    color: historyEntry.color,
-    shade: result.shade,
-    warmth: result.warmth,
-    vrfResolved: result.vrfResolved,
-    reasoning: historyEntry.reasoning,
+    status: pixelState?.status ?? "null",
   });
 
-  // 16. Send success alert
-  await ctx.alerts.sendSuccess({
-    pixelIndex,
-    colorName: historyEntry.color,
-    shade: result.shade,
-    warmth: result.warmth,
-  });
+  // --- PixelState = null → open_round + pre-open N+1 ---
+  if (pixelState === null) {
+    const x = pixelIndex % gridWidth;
+    const y = Math.floor(pixelIndex / gridWidth);
+    const canvasPixels = await chain.getAllResolvedPixels(seasonNumber, pixelIndex);
+    const history = await ctx.history.read();
+    const systemPrompt = buildSystemPrompt(gridWidth, gridHeight, config.seasonStyleSummary);
+    const userMessage = buildUserMessage(canvasPixels, x, y, gridWidth, gridHeight, history);
+    const fullPrompt = buildFullPrompt(systemPrompt, userMessage);
+    const promptHash = hashPrompt(fullPrompt);
+
+    await chain.openRoundForSeason(seasonNumber, pixelIndex, Array.from(promptHash));
+    logger.info({ event: "tick_action", action: "open_round", seasonNumber, pixelIndex });
+
+    // Pre-open N+1
+    if (pixelIndex + 1 < totalPixels) {
+      try {
+        const placeholderText = `placeholder-${seasonNumber}-${pixelIndex + 1}`;
+        const placeholderHash = createHash("sha256")
+          .update(Buffer.from(placeholderText, "utf8"))
+          .digest();
+        await chain.openRoundForSeason(seasonNumber, pixelIndex + 1, Array.from(placeholderHash));
+        logger.info({ event: "tick_action", action: "preopen_next", seasonNumber, pixelIndex: pixelIndex + 1 });
+      } catch {
+        logger.info({
+          event: "preopen_next_skipped",
+          seasonNumber,
+          pixelIndex: pixelIndex + 1,
+          reason: "already exists or non-fatal error",
+        });
+      }
+    }
+    return;
+  }
+
+  switch (pixelState.status) {
+    // --- Betting window ---
+    case "open": {
+      const openedAt = pixelState.openedAt ? Number(pixelState.openedAt) * 1000 : Date.now();
+      const elapsed = Date.now() - openedAt;
+      const bettingMs = config.bettingWindowMinutes * 60_000;
+      if (elapsed < bettingMs) {
+        logger.info({ event: "tick_noop", reason: "betting_window", pixelIndex, remainingMs: bettingMs - elapsed });
+        return;
+      }
+      // Betting window expired → lock
+      await chain.lockRound(seasonNumber, pixelIndex);
+      logger.info({ event: "tick_action", action: "lock_round", seasonNumber, pixelIndex });
+      return;
+    }
+
+    // --- Lock window → resolve ---
+    case "locked": {
+      const lockedAt = pixelState.lockedAt ? Number(pixelState.lockedAt) * 1000 : Date.now();
+      const elapsed = Date.now() - lockedAt;
+      const lockMs = config.lockWindowMinutes * 60_000;
+      if (elapsed < lockMs) {
+        logger.info({ event: "tick_noop", reason: "lock_window", pixelIndex, remainingMs: lockMs - elapsed });
+        return;
+      }
+
+      // Lock window expired → resolve
+      const x = pixelIndex % gridWidth;
+      const y = Math.floor(pixelIndex / gridWidth);
+      const canvasPixels = await chain.getAllResolvedPixels(seasonNumber, pixelIndex);
+      const historyEntries = await ctx.history.read();
+      const systemPrompt = buildSystemPrompt(gridWidth, gridHeight, config.seasonStyleSummary);
+      const userMessage = buildUserMessage(canvasPixels, x, y, gridWidth, gridHeight, historyEntries);
+      const fullPrompt = buildFullPrompt(systemPrompt, userMessage);
+
+      // Check RIGGED_COLOR test mode
+      const riggedColor = process.env.RIGGED_COLOR;
+      let result: ResolutionResult;
+
+      if (riggedColor !== undefined) {
+        const riggedIndex = parseInt(riggedColor, 10);
+        const { COLOR_NAMES } = await import("./types");
+        const colorName = COLOR_NAMES[riggedIndex] ?? "Red";
+        logger.info({ event: "rigged_resolve", pixelIndex, colorIndex: riggedIndex, colorName });
+        result = {
+          colorIndex: riggedIndex,
+          colorName,
+          shade: 50,
+          warmth: 50,
+          reasoning: "RIGGED FOR TESTING",
+          vrfResolved: false,
+        };
+      } else {
+        result = await callClaudeWithFallback(ctx, systemPrompt, userMessage, seasonNumber, pixelIndex);
+      }
+
+      // Post result on-chain (VRF path already posts itself in resolveViaVrf)
+      if (!result.vrfResolved) {
+        const claudeResult = result as Exclude<ResolutionResult, { vrfResolved: true }>;
+        await chain.resolveRound(seasonNumber, pixelIndex, {
+          colorIndex: claudeResult.colorIndex,
+          colorName: claudeResult.colorName,
+          shade: claudeResult.shade,
+          warmth: claudeResult.warmth,
+          reasoning: claudeResult.reasoning ?? "",
+        });
+      }
+
+      // Arweave upload (non-blocking — errors caught and logged)
+      const txid = await uploadToArweave(
+        fullPrompt,
+        config.oracleKeypair,
+        config.solanaRpcUrl
+      ).catch((err) => {
+        logger.warn({
+          event: "arweave_upload_failed",
+          pixelIndex,
+          error: err instanceof Error ? err.message : String(err),
+        });
+        ctx.alerts.sendArweaveFailure(pixelIndex, err instanceof Error ? err.message : String(err)).catch(() => {});
+        return null;
+      });
+      if (txid) {
+        await chain.setArweaveTxid(seasonNumber, pixelIndex, txid).catch((err) => {
+          logger.warn({
+            event: "arweave_txid_write_failed",
+            pixelIndex,
+            txid,
+            error: err instanceof Error ? err.message : String(err),
+          });
+        });
+      }
+
+      // Update round history
+      const historyEntry: RoundHistoryEntry = {
+        pixelIndex,
+        x,
+        y,
+        color: result.vrfResolved
+          ? `color-${result.colorIndex}`
+          : (result as Exclude<ResolutionResult, { vrfResolved: true }>).colorName,
+        shade: result.shade,
+        warmth: result.warmth,
+        reasoning: result.vrfResolved
+          ? "VRF fallback — Claude was unavailable for 30+ minutes"
+          : (result as Exclude<ResolutionResult, { vrfResolved: true }>).reasoning ?? "",
+      };
+      await ctx.history.push(historyEntry);
+
+      logger.info({
+        event: "tick_action",
+        action: "resolve_round",
+        seasonNumber,
+        pixelIndex,
+        x,
+        y,
+        colorIndex: result.colorIndex,
+        color: historyEntry.color,
+        shade: result.shade,
+        warmth: result.warmth,
+        vrfResolved: result.vrfResolved,
+      });
+
+      // Success alert
+      await ctx.alerts.sendSuccess({
+        pixelIndex,
+        colorName: historyEntry.color,
+        shade: result.shade,
+        warmth: result.warmth,
+      });
+      return;
+    }
+
+    // --- Resolved: safety net for Arweave retry ---
+    case "resolved": {
+      if (!pixelState.hasArweaveTxid) {
+        const x = pixelIndex % gridWidth;
+        const y = Math.floor(pixelIndex / gridWidth);
+        const canvasPixels = await chain.getAllResolvedPixels(seasonNumber, pixelIndex);
+        const historyEntries = await ctx.history.read();
+        const systemPrompt = buildSystemPrompt(gridWidth, gridHeight, config.seasonStyleSummary);
+        const userMessage = buildUserMessage(canvasPixels, x, y, gridWidth, gridHeight, historyEntries);
+        const fullPrompt = buildFullPrompt(systemPrompt, userMessage);
+
+        const txid = await uploadToArweave(
+          fullPrompt,
+          config.oracleKeypair,
+          config.solanaRpcUrl
+        ).catch((err) => {
+          logger.warn({
+            event: "arweave_upload_failed",
+            pixelIndex,
+            error: err instanceof Error ? err.message : String(err),
+          });
+          return null;
+        });
+        if (txid) {
+          await chain.setArweaveTxid(seasonNumber, pixelIndex, txid).catch((err) => {
+            logger.warn({
+              event: "arweave_txid_write_failed",
+              pixelIndex,
+              txid,
+              error: err instanceof Error ? err.message : String(err),
+            });
+          });
+        }
+        logger.info({ event: "tick_action", action: "arweave_upload", pixelIndex });
+        return;
+      }
+      // Round fully complete
+      logger.info({ event: "tick_noop", reason: "round_complete", pixelIndex });
+      return;
+    }
+
+    default:
+      logger.warn({ event: "tick_unknown_status", pixelIndex, status: pixelState.status });
+      return;
+  }
 }

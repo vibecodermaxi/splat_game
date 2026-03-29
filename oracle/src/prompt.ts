@@ -87,7 +87,7 @@ export function buildUserMessage(
     lines.push("No pixels filled yet.");
   } else {
     for (const p of canvasPixels) {
-      lines.push(`(${p.x}, ${p.y}): ${p.color}, shade ${p.shade}, warmth ${p.warmth}`);
+      lines.push(`(${p.x}, ${p.y}): ${p.color}`);
     }
   }
 
@@ -123,7 +123,7 @@ export function buildUserMessage(
     }
     const neighbor = pixelMap.get(`${nx},${ny}`);
     if (neighbor) {
-      lines.push(`(${nx}, ${ny}): ${neighbor.color}, shade ${neighbor.shade}, warmth ${neighbor.warmth}`);
+      lines.push(`(${nx}, ${ny}): ${neighbor.color}`);
     } else {
       lines.push(`(${nx}, ${ny}): empty`);
     }
@@ -139,7 +139,7 @@ export function buildUserMessage(
   } else {
     recentHistory.forEach((entry, idx) => {
       lines.push(
-        `${idx + 1}. (${entry.x}, ${entry.y}): ${entry.color}, shade ${entry.shade}, warmth ${entry.warmth} - "${entry.reasoning}"`
+        `${idx + 1}. (${entry.x}, ${entry.y}): ${entry.color} - "${entry.reasoning}"`
       );
     });
   }

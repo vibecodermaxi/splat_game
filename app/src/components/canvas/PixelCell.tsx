@@ -37,7 +37,7 @@ export function PixelCell({ pixelIndex, isActive, data, onTap }: PixelCellProps)
   // Determine style
   let style: React.CSSProperties = {
     aspectRatio: "1",
-    borderRadius: "4px",
+    borderRadius: "2px",
     cursor: "pointer",
     transition: "opacity 150ms ease",
   };

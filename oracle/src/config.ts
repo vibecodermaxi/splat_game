@@ -19,7 +19,7 @@ export interface OracleConfig {
   roundDurationMinutes: number;    // Total round duration (default 30)
   bettingWindowMinutes: number;    // Betting window (derived: roundDuration - 2)
   lockWindowMinutes: number;       // Lock window (always 2 minutes)
-  cronSchedule: string;            // Cron expression derived from roundDurationMinutes
+  tickIntervalMs: number;          // Ticker interval in milliseconds (default 90s)
 }
 
 /**
@@ -83,10 +83,8 @@ export function loadConfig(): OracleConfig {
   }
   const lockWindowMinutes = 2;
   const bettingWindowMinutes = roundDurationMinutes - lockWindowMinutes;
-  const cronSchedule =
-    roundDurationMinutes <= 30
-      ? `*/${roundDurationMinutes} * * * *`
-      : `0,${roundDurationMinutes} * * * *`;
+  const tickIntervalMs =
+    parseInt(process.env.TICK_INTERVAL_SECONDS || "90", 10) * 1000;
 
   // Optional Telegram configuration — warn but do not exit if missing
   const telegramBotToken = process.env.TELEGRAM_BOT_TOKEN || undefined;
@@ -111,6 +109,6 @@ export function loadConfig(): OracleConfig {
     roundDurationMinutes,
     bettingWindowMinutes,
     lockWindowMinutes,
-    cronSchedule,
+    tickIntervalMs,
   };
 }

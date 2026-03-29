@@ -22,7 +22,7 @@ export default function HowItWorksPage() {
     <DocsLayout title="How It Works">
       <h2 style={headingStyle}>The Game</h2>
       <p style={paraStyle}>
-        Pixel Predict is a prediction game. An AI artist paints a 10x10 canvas, one pixel at a
+        Pixel Predict is a prediction game. An AI artist paints a 20x20 canvas, one pixel at a
         time. You bet on what color the AI will pick next.
       </p>
 
@@ -35,7 +35,7 @@ export default function HowItWorksPage() {
 
       <h2 style={headingStyle}>The Canvas</h2>
       <p style={paraStyle}>
-        100 pixels, 100 rounds, one season. When the last pixel fills in, the season is complete.
+        400 pixels, 400 rounds, one season. When the last pixel fills in, the season is complete.
         New canvas, new game.
       </p>
 

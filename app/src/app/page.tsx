@@ -9,15 +9,17 @@ import { BettingPanel } from "@/components/betting/BettingPanel";
 import { RoundInfo } from "@/components/round/RoundInfo";
 import { WinNotification } from "@/components/ui/WinNotification";
 import { LossNotification } from "@/components/ui/LossNotification";
-import { MyBetsDrawer } from "@/components/mybets/MyBetsDrawer";
+import { MyBetsSummary } from "@/components/mybets/MyBetsSummary";
 import { SeasonCompleteOverlay } from "@/components/season/SeasonCompleteOverlay";
 import { IntermissionScreen } from "@/components/season/IntermissionScreen";
-import { OnboardingTour } from "@/components/onboarding/OnboardingTour";
 import { WalletDisconnectBanner } from "@/components/ui/WalletDisconnectBanner";
 import { JackpotTeaser } from "@/components/ui/JackpotTeaser";
+import { WelcomeCard } from "@/components/ui/WelcomeCard";
+import { AmbientParticles } from "@/components/ui/AmbientParticles";
 import { useSeasonData } from "@/hooks/useSeasonData";
 import { useResolution } from "@/hooks/useResolution";
 import { useSeasonCompletion } from "@/hooks/useSeasonCompletion";
+import { useCountdown } from "@/hooks/useCountdown";
 import { useBetHistory } from "@/hooks/useBetHistory";
 import { useGameStore } from "@/store/gameStore";
 import { PROGRAM_ID } from "@/lib/constants";
@@ -46,9 +48,6 @@ export default function Home() {
   // TODO: Re-enable after fixing PDA reference stability and browser decode
   // useHeliusSocket({ pixelPDA, seasonPDA, seasonNumber: seasonNumber || 1 });
 
-  // My Bets drawer state
-  const [myBetsOpen, setMyBetsOpen] = useState(false);
-
   // Season completion state
   const { state: seasonCompletionState } = useSeasonCompletion(
     seasonNumber || 1,
@@ -62,12 +61,43 @@ export default function Home() {
   // Wallet connection for conditional header buttons
   const { connected } = useWallet();
 
+  // Help modal state (? button)
+  const [helpOpen, setHelpOpen] = useState(false);
+
+  // Timer urgency — drive background tint from countdown progress
+  const activePixelData = pixels[currentPixelIndex] ?? null;
+  const openedAtSeconds = activePixelData?.openedAtSeconds ?? null;
+  const { secondsLeft } = useCountdown(openedAtSeconds);
+
+  const urgencyBg = (() => {
+    if (openedAtSeconds === null || secondsLeft <= 0) return "#14141F";
+    if (secondsLeft <= 10) {
+      // Final drama: strong warm pulse
+      return "#1F1418";
+    }
+    if (secondsLeft <= 30) {
+      // Last 30s: noticeable warm vignette
+      return "#1A1419";
+    }
+    if (secondsLeft <= 120) {
+      // Last 2 min: subtle shift toward warm
+      const t = (120 - secondsLeft) / 90; // 0→1 over 120→30s
+      // Interpolate from #14141F to #17141C
+      const r = Math.round(0x14 + t * 3);
+      const g = 0x14;
+      const b = Math.round(0x1f - t * 3);
+      return `#${r.toString(16).padStart(2, "0")}${g.toString(16).padStart(2, "0")}${b.toString(16).padStart(2, "0")}`;
+    }
+    return "#14141F";
+  })();
+
   // Show SeasonCompleteOverlay when season transitions to "completed"
   useEffect(() => {
     if (seasonStatus === "completed") {
       setShowSeasonComplete(true);
     }
   }, [seasonStatus]);
+
 
   // If intermission, show IntermissionScreen instead of game
   if (seasonStatus === "intermission" && intermissionEndsSeconds) {
@@ -95,10 +125,29 @@ export default function Home() {
         display: "flex",
         flexDirection: "column",
         minHeight: "100vh",
-        background: "#14141F",
+        background: urgencyBg,
         color: "#E0E0E0",
+        transition: "background 1.5s ease",
       }}
     >
+      {/* Ambient background particles */}
+      <AmbientParticles />
+
+      {/* Vignette overlay — darkened edges in final 30s */}
+      {secondsLeft > 0 && secondsLeft <= 30 && (
+        <div
+          aria-hidden="true"
+          style={{
+            position: "fixed",
+            inset: 0,
+            pointerEvents: "none",
+            zIndex: 1,
+            background: `radial-gradient(ellipse at center, transparent 40%, rgba(255, 59, 111, ${secondsLeft <= 10 ? 0.08 : 0.04}) 100%)`,
+            transition: "background 1s ease",
+          }}
+        />
+      )}
+
       {/* ======================== HEADER ======================== */}
       <header
         id="splat-header"
@@ -125,11 +174,11 @@ export default function Home() {
         >
           {/* Logo */}
           <h1
+            className="splat-logo"
             style={{
               fontFamily: "var(--font-family-display)",
               fontSize: "1.75rem",
               fontWeight: 700,
-              color: "#fff",
               letterSpacing: "0.04em",
               lineHeight: 1,
               margin: 0,
@@ -170,15 +219,11 @@ export default function Home() {
               flexShrink: 0,
             }}
           >
-            {/* JackpotTeaser — always visible */}
-            <JackpotTeaser />
-
-            {/* Bets button — only when wallet connected */}
+            {/* Bets link — only when wallet connected */}
             {connected && (
-              <button
-                type="button"
-                onClick={() => setMyBetsOpen(true)}
-                aria-label="Open My Bets drawer"
+              <Link
+                href="/bets"
+                aria-label="View all bets"
                 style={{
                   background: "#2A2A3E",
                   border: "none",
@@ -191,16 +236,20 @@ export default function Home() {
                   cursor: "pointer",
                   height: 32,
                   whiteSpace: "nowrap",
+                  textDecoration: "none",
+                  display: "flex",
+                  alignItems: "center",
                 }}
               >
                 Bets
-              </button>
+              </Link>
             )}
 
-            {/* ? Help button — links to docs */}
-            <Link
-              href="/how-it-works"
-              aria-label="How it works documentation"
+            {/* ? Help button — opens welcome card */}
+            <button
+              type="button"
+              onClick={() => setHelpOpen(true)}
+              aria-label="How to play"
               style={{
                 background: "#2A2A3E",
                 border: "none",
@@ -215,12 +264,11 @@ export default function Home() {
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                textDecoration: "none",
                 lineHeight: 1,
               }}
             >
               ?
-            </Link>
+            </button>
 
             {/* Wallet button */}
             <WalletMultiButton />
@@ -233,17 +281,17 @@ export default function Home() {
 
       {/* ======================== MAIN ======================== */}
       <main
+        className="main-content"
         style={{
           flex: 1,
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
-          paddingTop: "calc(72px + 16px)", // header height + spacing
+          paddingTop: "calc(72px + 16px)",
           paddingBottom: 32,
           paddingLeft: 16,
           paddingRight: 16,
           gap: 24,
-          maxWidth: 480,
           width: "100%",
           margin: "40px auto",
           boxSizing: "border-box",
@@ -264,14 +312,11 @@ export default function Home() {
         >
           <BettingPanel />
 
-          {/* Loss notification renders below betting panel */}
-          {resolution?.type === "loss" && (
-            <LossNotification
-              winningColorName={resolution.winningColorName}
-              onDismiss={clearResolution}
-            />
-          )}
+          {/* Loss notification moved to overlay section below */}
         </div>
+
+        {/* My Bets summary — only shows when player has active/claimable bets */}
+        {connected && <MyBetsSummary />}
       </main>
 
       {/* ======================== OVERLAYS ======================== */}
@@ -294,11 +339,20 @@ export default function Home() {
         />
       )}
 
-      {/* My Bets drawer — renders outside main flow */}
-      <MyBetsDrawer isOpen={myBetsOpen} onClose={() => setMyBetsOpen(false)} />
+      {/* Loss notification — fixed bottom */}
+      {resolution?.type === "loss" && (
+        <LossNotification
+          winningColorName={resolution.winningColorName}
+          onDismiss={clearResolution}
+        />
+      )}
 
-      {/* Onboarding tour — renders last, above everything */}
-      <OnboardingTour />
+
+      {/* Jackpot teaser — floating bubble, large screens only */}
+      <JackpotTeaser />
+
+      {/* Welcome card — first visit + ? button */}
+      <WelcomeCard forceOpen={helpOpen} onClose={() => setHelpOpen(false)} />
 
       {/* ======================== STYLES ======================== */}
       <style>{`

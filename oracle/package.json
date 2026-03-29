@@ -16,14 +16,12 @@
     "@solana/web3.js": "^1.98.0",
     "@switchboard-xyz/on-demand": "^3.9.0",
     "dotenv": "^16.4.7",
-    "node-cron": "^3.0.3",
     "node-telegram-bot-api": "^0.66.0"
   },
   "devDependencies": {
     "@types/chai": "^4.3.20",
     "@types/mocha": "^10.0.10",
     "@types/node": "^22.13.9",
-    "@types/node-cron": "^3.0.11",
     "@types/node-telegram-bot-api": "^0.64.7",
     "chai": "^4.5.0",
     "mocha": "^10.8.2",

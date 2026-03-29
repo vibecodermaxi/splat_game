@@ -197,7 +197,7 @@ export function IntermissionScreen({
           color: "rgba(255, 255, 255, 0.7)",
         }}
       >
-        <p style={{ marginBottom: "4px" }}>100 rounds played</p>
+        <p style={{ marginBottom: "4px" }}>{TOTAL_PIXELS} rounds played</p>
         <p style={{ color: "rgba(255, 255, 255, 0.5)", fontSize: "0.9rem" }}>
           Total pool: {totalPoolSol} SOL
         </p>

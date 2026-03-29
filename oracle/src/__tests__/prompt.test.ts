@@ -57,9 +57,9 @@ describe("buildUserMessage", () => {
       { x: 2, y: 0, color: "Green", shade: 80, warmth: 20 },
     ];
     const result = buildUserMessage(canvas, 5, 5, 10, 10, []);
-    expect(result).to.include("(0, 0): Red, shade 50, warmth 50");
-    expect(result).to.include("(1, 0): Blue, shade 30, warmth 70");
-    expect(result).to.include("(2, 0): Green, shade 80, warmth 20");
+    expect(result).to.include("(0, 0): Red");
+    expect(result).to.include("(1, 0): Blue");
+    expect(result).to.include("(2, 0): Green");
   });
 
   it("Test 5: correctly identifies neighbors (adjacent pixels) for a center pixel", () => {
@@ -71,9 +71,9 @@ describe("buildUserMessage", () => {
     ];
     const result = buildUserMessage(canvas, 2, 2, 10, 10, []);
     // Should list filled neighbors
-    expect(result).to.include("(2, 1): Red, shade 50, warmth 50");
-    expect(result).to.include("(1, 2): Blue, shade 30, warmth 70");
-    expect(result).to.include("(3, 3): Green, shade 80, warmth 20");
+    expect(result).to.include("(2, 1): Red");
+    expect(result).to.include("(1, 2): Blue");
+    expect(result).to.include("(3, 3): Green");
     // Unfilled neighbors should be "empty"
     expect(result).to.include("empty");
   });

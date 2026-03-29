@@ -26,11 +26,9 @@ import { logger } from "./logger";
  */
 export function parseClaudeResponse(raw: string): ClaudeResult | null {
   const colorMatch = raw.match(/^COLOR:\s*(.+)$/m);
-  const shadeMatch = raw.match(/^SHADE:\s*(\d+)$/m);
-  const warmthMatch = raw.match(/^WARMTH:\s*(\d+)$/m);
   const reasoningMatch = raw.match(/^REASONING:\s*(.+)$/m);
 
-  if (!colorMatch || !shadeMatch || !warmthMatch || !reasoningMatch) {
+  if (!colorMatch || !reasoningMatch) {
     return null;
   }
 
@@ -40,15 +38,14 @@ export function parseClaudeResponse(raw: string): ClaudeResult | null {
     return null;
   }
 
-  const shade = parseInt(shadeMatch[1], 10);
-  const warmth = parseInt(warmthMatch[1], 10);
   const reasoning = reasoningMatch[1].trim();
 
+  // Shade and warmth are always neutral (50) — on-chain fields kept for compatibility
   return {
     colorIndex,
     colorName,
-    shade,
-    warmth,
+    shade: 50,
+    warmth: 50,
     reasoning,
   };
 }
@@ -61,8 +58,6 @@ export function parseClaudeResponse(raw: string): ClaudeResult | null {
  */
 export function validateClaudeResult(result: ClaudeResult): boolean {
   if (result.colorIndex < 0 || result.colorIndex > 15) return false;
-  if (result.shade < 0 || result.shade > 100) return false;
-  if (result.warmth < 0 || result.warmth > 100) return false;
   return true;
 }
 

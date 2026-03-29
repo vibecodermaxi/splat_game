@@ -120,41 +120,58 @@ export function CountdownTimer() {
     );
   }
 
+  // Phase label shown below the timer
+  const phaseLabel = isLocked
+    ? "Betting closed \u00B7 AI picks soon"
+    : "until betting closes";
+
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: "8px", padding: "4px 0" }}>
-      <span
-        style={{
-          color: timerColor,
-          fontWeight: 700,
-          fontSize: "1.5rem",
-          lineHeight: 1,
-          transition: "color 0.3s ease-out",
-        }}
-      >
-        {minutesDisplay}:{secondsDisplay}
-      </span>
-
-      {isLocked && !isFinalDrama && (
-        <motion.span
-          animate={
-            shouldReduceMotion ? {} : { opacity: [1, 0.5, 1] }
-          }
-          transition={{ duration: 1, repeat: Infinity, ease: "easeInOut" }}
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "2px", padding: "4px 0" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+        <span
           style={{
-            background: "#FFD93B",
-            color: "#1E1E2E",
-
+            color: timerColor,
             fontWeight: 700,
-            fontSize: "0.7rem",
-            padding: "2px 8px",
-            borderRadius: "4px",
-            textTransform: "uppercase",
-            letterSpacing: "0.05em",
+            fontSize: "1.5rem",
+            lineHeight: 1,
+            transition: "color 0.3s ease-out",
           }}
         >
-          LOCKED
-        </motion.span>
-      )}
+          {minutesDisplay}:{secondsDisplay}
+        </span>
+
+        {isLocked && !isFinalDrama && (
+          <motion.span
+            animate={
+              shouldReduceMotion ? {} : { opacity: [1, 0.5, 1] }
+            }
+            transition={{ duration: 1, repeat: Infinity, ease: "easeInOut" }}
+            style={{
+              background: "#FFD93B",
+              color: "#1E1E2E",
+              fontWeight: 700,
+              fontSize: "0.7rem",
+              padding: "2px 8px",
+              borderRadius: "4px",
+              textTransform: "uppercase",
+              letterSpacing: "0.05em",
+            }}
+          >
+            LOCKED
+          </motion.span>
+        )}
+      </div>
+      <span
+        style={{
+          color: isLocked ? "#FFD93B" : "#666",
+          fontSize: "0.65rem",
+          fontWeight: 600,
+          fontFamily: "var(--font-family-body, 'Nunito', sans-serif)",
+          letterSpacing: "0.02em",
+        }}
+      >
+        {phaseLabel}
+      </span>
     </div>
   );
 }

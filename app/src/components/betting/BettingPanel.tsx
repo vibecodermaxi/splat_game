@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { useGameStore } from "@/store/gameStore";
 import { useCountdown } from "@/hooks/useCountdown";
@@ -11,6 +11,7 @@ import { ColorSwatch } from "@/components/betting/ColorSwatch";
 import { BetInput } from "@/components/betting/BetInput";
 import { COLOR_NAMES, BASE_HEX } from "@/lib/color";
 import { MIN_BET_SOL } from "@/lib/constants";
+import { StreakBadge } from "@/components/ui/StreakBadge";
 
 // Toast notification for transaction feedback
 interface Toast {
@@ -48,6 +49,23 @@ export function BettingPanel() {
   const [betAmount, setBetAmount] = useState<number>(MIN_BET_SOL);
   const [addingMore, setAddingMore] = useState(false);
   const [toasts, setToasts] = useState<Toast[]>([]);
+
+  // Round transition drip — detect when active pixel resolves
+  const [dripColor, setDripColor] = useState<string | null>(null);
+  const prevStatusRef = useRef<string | null>(null);
+  useEffect(() => {
+    const status = activePixelData?.status ?? null;
+    if (status === "resolved" && prevStatusRef.current !== null && prevStatusRef.current !== "resolved") {
+      const winColor = activePixelData?.winningColor;
+      if (winColor !== null && winColor !== undefined) {
+        const name = COLOR_NAMES[winColor] ?? "Red";
+        setDripColor(BASE_HEX[name] ?? "#FF3B6F");
+        const timer = setTimeout(() => setDripColor(null), 1800);
+        return () => clearTimeout(timer);
+      }
+    }
+    prevStatusRef.current = status;
+  }, [activePixelData]);
 
   // Lock selected color to playerBet.colorIndex after betting (can only increase)
   const effectiveSelectedColor =
@@ -144,8 +162,51 @@ export function BettingPanel() {
         padding: "20px",
         transition: "background 300ms ease-out",
         position: "relative",
+        overflow: "hidden",
       }}
     >
+      {/* Round transition drip — winning color drips down then fades */}
+      <AnimatePresence>
+        {dripColor && (
+          <motion.div
+            key="round-drip"
+            initial={{ y: "-100%" }}
+            animate={{ y: "0%" }}
+            exit={{ opacity: 0 }}
+            transition={{
+              y: { duration: 0.5, ease: [0.22, 1, 0.36, 1] },
+              opacity: { duration: 0.8, delay: 0.6 },
+            }}
+            style={{
+              position: "absolute",
+              inset: 0,
+              zIndex: 20,
+              pointerEvents: "none",
+              background: `linear-gradient(180deg, ${dripColor}55 0%, ${dripColor}22 60%, transparent 100%)`,
+              borderRadius: "16px",
+            }}
+          >
+            {/* Drip blobs at bottom edge */}
+            <svg
+              viewBox="0 0 400 40"
+              preserveAspectRatio="none"
+              style={{
+                position: "absolute",
+                bottom: -1,
+                left: 0,
+                width: "100%",
+                height: "40px",
+              }}
+            >
+              <path
+                d={`M0,0 Q50,35 100,8 Q150,40 200,5 Q250,38 300,10 Q350,35 400,0 L400,40 L0,40 Z`}
+                fill={`${dripColor}22`}
+              />
+            </svg>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Section 1: Countdown Timer */}
       <div style={{ marginBottom: "16px" }}>
         <CountdownTimer />
@@ -166,6 +227,7 @@ export function BettingPanel() {
             colorIndex={i}
             isSelected={effectiveSelectedColor === i}
             multiplier={computeMultiplier(colorPools[i] ?? 0, totalPool)}
+            poolFraction={totalPool > 0 ? (colorPools[i] ?? 0) / totalPool : 0}
             onSelect={(idx) => {
               if (!playerBet || addingMore) {
                 setSelectedColor(idx);
@@ -208,6 +270,7 @@ export function BettingPanel() {
           type="button"
           onClick={handlePlaceBet}
           disabled={isActionDisabled}
+          className={!isActionDisabled && !isSubmitting ? "splat-btn-ready" : ""}
           animate={
             !isActionDisabled && !isSubmitting
               ? { scale: [1, 1.02, 1] }
@@ -218,6 +281,7 @@ export function BettingPanel() {
               ? { duration: 2, repeat: Infinity, ease: "easeInOut" }
               : { duration: 0.1 }
           }
+          whileTap={!isActionDisabled ? { scale: 0.93 } : undefined}
           style={{
             width: "100%",
             height: "52px",
@@ -231,11 +295,13 @@ export function BettingPanel() {
             textTransform: "uppercase",
             cursor: isActionDisabled ? "not-allowed" : "pointer",
             opacity: isActionDisabled && !isLocked && !roundNotOpen ? 0.6 : 1,
-            transition: "background 0.2s ease-out, opacity 0.2s",
+            transition: "background 0.2s ease-out, opacity 0.2s, box-shadow 0.2s ease-out",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
             gap: "8px",
+            position: "relative",
+            overflow: "hidden",
           }}
         >
           {isSubmitting && (
@@ -299,17 +365,27 @@ export function BettingPanel() {
             textAlign: "center",
           }}
         >
-          <p
+          <div
             style={{
-              color: "#fff",
-  
-              fontWeight: 700,
-              fontSize: "1rem",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "8px",
               marginBottom: "4px",
             }}
           >
-            Splatted! You're on {COLOR_NAMES[playerBet.colorIndex]}.
-          </p>
+            <p
+              style={{
+                color: "#fff",
+                fontWeight: 700,
+                fontSize: "1rem",
+                margin: 0,
+              }}
+            >
+              Splatted! You're on {COLOR_NAMES[playerBet.colorIndex]}.
+            </p>
+            <StreakBadge />
+          </div>
           <p
             style={{
               color: "#aaa",

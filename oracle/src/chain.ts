@@ -444,13 +444,26 @@ export class ChainClient {
     pixelIndex: number,
     txid: string
   ): Promise<string> {
-    if (txid.length !== 43) {
+    // On-chain field is [u8; 43]. Irys v2 returns 44-char IDs.
+    // Accept both: store first 43 chars on-chain, log the full txid.
+    if (txid.length < 43 || txid.length > 44) {
       throw new Error(
-        `Arweave txid must be exactly 43 characters, got ${txid.length}: "${txid}"`
+        `Arweave txid must be 43-44 characters, got ${txid.length}: "${txid}"`
       );
     }
+    const storedTxid = txid.slice(0, 43);
+    if (txid.length > 43) {
+      logger.info({
+        event: "arweave_txid_truncated",
+        seasonNumber,
+        pixelIndex,
+        fullTxid: txid,
+        storedTxid,
+        note: "On-chain field is [u8; 43]; full txid logged here for reference",
+      });
+    }
     // Encode the 43-char ASCII string as a [u8; 43] byte array
-    const txidBytes = Array.from(Buffer.from(txid, "ascii")) as number[] & { length: 43 };
+    const txidBytes = Array.from(Buffer.from(storedTxid, "ascii")) as number[] & { length: 43 };
 
     const pixelPda = this.getPixelPDA(seasonNumber, pixelIndex);
     const configPda = this.getConfigPDA();
