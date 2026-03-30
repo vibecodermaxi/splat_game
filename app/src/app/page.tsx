@@ -270,6 +270,32 @@ export default function Home() {
               ?
             </button>
 
+            {/* Tips link */}
+            <Link
+              href="/tips"
+              aria-label="Tips & Strategy"
+              style={{
+                background: "#2A2A3E",
+                border: "none",
+                borderRadius: "8px",
+                color: "#FFD93B",
+                fontFamily: "var(--font-family-body, 'Nunito', sans-serif)",
+                fontSize: "0.7rem",
+                fontWeight: 700,
+                padding: "6px 10px",
+                cursor: "pointer",
+                height: 32,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                textDecoration: "none",
+                lineHeight: 1,
+                gap: 4,
+              }}
+            >
+              Tips
+            </Link>
+
             {/* Wallet button */}
             <WalletMultiButton />
           </div>
