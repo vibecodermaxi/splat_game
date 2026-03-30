@@ -7,6 +7,12 @@ export const PROGRAM_ID = new PublicKey(
 export const GRID_SIZE = 20;
 export const TOTAL_PIXELS = 400;
 
+// Current season — configurable via env var for deployment
+export const CURRENT_SEASON = parseInt(
+  process.env.NEXT_PUBLIC_CURRENT_SEASON || "1",
+  10
+);
+
 // Timing constants (in seconds) — configurable via env var
 // Set NEXT_PUBLIC_ROUND_DURATION_SECONDS in app/.env.local (default: 1800 = 30 min)
 export const ROUND_DURATION_SECONDS = parseInt(

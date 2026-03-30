@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useConnection } from "@solana/wallet-adapter-react";
 import { useAnchorProgram } from "./useAnchorProgram";
 import { useGameStore } from "@/store/gameStore";
-import { PROGRAM_ID } from "@/lib/constants";
+import { PROGRAM_ID, CURRENT_SEASON } from "@/lib/constants";
 import { deriveSeasonPDA, derivePixelPDA, deriveBetPDA } from "@/lib/pda";
 import type { PixelSnapshot, BetState } from "@/types/game";
 import { useAnchorWallet } from "@solana/wallet-adapter-react";
@@ -88,7 +88,7 @@ interface UseSeasonDataResult {
  *
  * Also fetches the player's BetAccount for the active pixel if wallet is connected.
  */
-export function useSeasonData(initialSeasonNumber: number = 1): UseSeasonDataResult {
+export function useSeasonData(initialSeasonNumber: number = CURRENT_SEASON): UseSeasonDataResult {
   const { connection } = useConnection();
   const program = useAnchorProgram();
   const wallet = useAnchorWallet();
