@@ -242,25 +242,6 @@ async function _tickInner(ctx: OracleContext): Promise<void> {
 
     await chain.openRoundForSeason(seasonNumber, pixelIndex, Array.from(promptHash));
     logger.info({ event: "tick_action", action: "open_round", seasonNumber, pixelIndex });
-
-    // Pre-open N+1
-    if (pixelIndex + 1 < totalPixels) {
-      try {
-        const placeholderText = `placeholder-${seasonNumber}-${pixelIndex + 1}`;
-        const placeholderHash = createHash("sha256")
-          .update(Buffer.from(placeholderText, "utf8"))
-          .digest();
-        await chain.openRoundForSeason(seasonNumber, pixelIndex + 1, Array.from(placeholderHash));
-        logger.info({ event: "tick_action", action: "preopen_next", seasonNumber, pixelIndex: pixelIndex + 1 });
-      } catch {
-        logger.info({
-          event: "preopen_next_skipped",
-          seasonNumber,
-          pixelIndex: pixelIndex + 1,
-          reason: "already exists or non-fatal error",
-        });
-      }
-    }
     return;
   }
 

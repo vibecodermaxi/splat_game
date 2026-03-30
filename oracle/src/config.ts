@@ -81,7 +81,7 @@ export function loadConfig(): OracleConfig {
     console.error("[oracle] Fatal: ROUND_DURATION_MINUTES must be >= 3");
     process.exit(1);
   }
-  const lockWindowMinutes = 2;
+  const lockWindowMinutes = 1;
   const bettingWindowMinutes = roundDurationMinutes - lockWindowMinutes;
   const tickIntervalMs =
     parseInt(process.env.TICK_INTERVAL_SECONDS || "90", 10) * 1000;

@@ -19,8 +19,8 @@ export const ROUND_DURATION_SECONDS = parseInt(
   process.env.NEXT_PUBLIC_ROUND_DURATION_SECONDS || "1800",
   10
 );
-// Lockout = last 2 minutes of round (matches oracle's lockWindowMinutes)
-export const LOCKOUT_SECONDS = 120;
+// Lockout = last 1 minute of round (matches oracle's lockWindowMinutes)
+export const LOCKOUT_SECONDS = 60;
 export const BETTING_WINDOW_SECONDS = ROUND_DURATION_SECONDS - LOCKOUT_SECONDS;
 
 // Polling / WebSocket intervals (in milliseconds)
