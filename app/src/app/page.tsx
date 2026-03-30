@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { GameCanvas } from "@/components/canvas/GameCanvas";
@@ -174,20 +175,29 @@ export default function Home() {
           }}
         >
           {/* Logo */}
-          <h1
-            className="splat-logo"
-            style={{
-              fontFamily: "var(--font-family-display)",
-              fontSize: "1.75rem",
-              fontWeight: 700,
-              letterSpacing: "0.04em",
-              lineHeight: 1,
-              margin: 0,
-              flexShrink: 0,
-            }}
-          >
-            SPLAT
-          </h1>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+            <Image
+              src="/logo-small.png"
+              alt="Splat logo"
+              width={32}
+              height={32}
+              style={{ borderRadius: 6 }}
+              priority
+            />
+            <h1
+              className="splat-logo"
+              style={{
+                fontFamily: "var(--font-family-display)",
+                fontSize: "1.75rem",
+                fontWeight: 700,
+                letterSpacing: "0.04em",
+                lineHeight: 1,
+                margin: 0,
+              }}
+            >
+              SPLAT
+            </h1>
+          </div>
 
           {/* Center: RoundInfo (hidden on narrow mobile, shown on tablet+) */}
           <div
