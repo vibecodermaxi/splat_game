@@ -231,6 +231,8 @@ export function BettingPanel() {
             onSelect={(idx) => {
               if (!playerBet) {
                 setSelectedColor(idx);
+              } else if (idx !== playerBet.colorIndex) {
+                addToast("You can only bet on one color per round.", "error");
               }
             }}
           />

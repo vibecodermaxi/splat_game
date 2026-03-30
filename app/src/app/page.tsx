@@ -7,6 +7,7 @@ import { useWallet } from "@solana/wallet-adapter-react";
 import { GameCanvas } from "@/components/canvas/GameCanvas";
 import { BettingPanel } from "@/components/betting/BettingPanel";
 import { RoundInfo } from "@/components/round/RoundInfo";
+import { PotDisplay } from "@/components/round/PotDisplay";
 import { WinNotification } from "@/components/ui/WinNotification";
 import { LossNotification } from "@/components/ui/LossNotification";
 import { MyBetsSummary } from "@/components/mybets/MyBetsSummary";
@@ -323,6 +324,9 @@ export default function Home() {
           boxSizing: "border-box",
         }}
       >
+        {/* Total pot display */}
+        <PotDisplay />
+
         {/* Canvas — hero element */}
         <div id="game-canvas" style={{ width: "100%", position: "relative" }}>
           <GameCanvas />
