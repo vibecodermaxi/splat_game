@@ -67,9 +67,9 @@ export function BettingPanel() {
     prevStatusRef.current = status;
   }, [activePixelData]);
 
-  // Lock selected color to playerBet.colorIndex after betting (can only increase)
+  // Lock selected color to playerBet.colorIndex after betting (can only add more SOL, not change color)
   const effectiveSelectedColor =
-    playerBet && !addingMore ? playerBet.colorIndex : selectedColor;
+    playerBet ? playerBet.colorIndex : selectedColor;
 
   // Map Anchor/wallet errors to user-friendly messages
   const mapError = (raw: string): string => {
@@ -229,7 +229,7 @@ export function BettingPanel() {
             multiplier={computeMultiplier(colorPools[i] ?? 0, totalPool)}
             poolFraction={totalPool > 0 ? (colorPools[i] ?? 0) / totalPool : 0}
             onSelect={(idx) => {
-              if (!playerBet || addingMore) {
+              if (!playerBet) {
                 setSelectedColor(idx);
               }
             }}
