@@ -29,7 +29,9 @@ export function CountdownTimer() {
     prevSecondsRef.current = secondsLeft;
   });
 
-  const isThinking = secondsLeft === 0 && openedAtSeconds !== null;
+  const activeStatus = activePixelData?.status ?? null;
+  const isResolved = activeStatus === "resolved";
+  const isThinking = secondsLeft === 0 && openedAtSeconds !== null && !isResolved;
 
   // Color scheme based on state
   const timerColor = isFinalDrama
@@ -57,6 +59,34 @@ export function CountdownTimer() {
     );
   }
 
+  if (isResolved) {
+    return (
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "2px", padding: "4px 0" }}>
+        <motion.span
+          animate={{ opacity: [1, 0.5, 1] }}
+          transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+          style={{
+            color: "#3BFF8A",
+            fontWeight: 700,
+            fontSize: "1rem",
+          }}
+        >
+          Round complete!
+        </motion.span>
+        <span
+          style={{
+            color: "#666",
+            fontSize: "0.65rem",
+            fontWeight: 600,
+            fontFamily: "var(--font-family-body, 'Nunito', sans-serif)",
+          }}
+        >
+          Next round starting soon
+        </span>
+      </div>
+    );
+  }
+
   if (isThinking) {
     return (
       <div style={{ textAlign: "center", padding: "8px 0" }}>
@@ -65,7 +95,6 @@ export function CountdownTimer() {
           transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
           style={{
             color: "#FFD93B",
-
             fontWeight: 700,
             fontSize: "1rem",
           }}

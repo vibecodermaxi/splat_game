@@ -105,7 +105,7 @@ export function useSeasonData(initialSeasonNumber: number = CURRENT_SEASON): Use
     if (!program) return;
 
     let cancelled = false;
-    let pollInterval: ReturnType<typeof setInterval> | null = null;
+    let pollInterval: ReturnType<typeof setTimeout> | null = null;
 
     async function fetchData() {
       try {
@@ -152,12 +152,28 @@ export function useSeasonData(initialSeasonNumber: number = CURRENT_SEASON): Use
     // Initial fetch
     fetchData();
 
-    // Poll every 10 seconds for round state changes
-    pollInterval = setInterval(fetchData, 10_000);
+    // Adaptive polling: 3s during transitions (resolved/waiting), 10s during normal play
+    const getPollInterval = () => {
+      const store = useGameStore.getState();
+      const active = store.pixels[store.currentPixelIndex];
+      if (!active || active.status === "resolved") return 3_000;
+      return 10_000;
+    };
+
+    // Use recursive setTimeout for adaptive intervals
+    const scheduleNext = () => {
+      pollInterval = setTimeout(() => {
+        if (cancelled) return;
+        fetchData().then(() => {
+          if (!cancelled) scheduleNext();
+        });
+      }, getPollInterval());
+    };
+    scheduleNext();
 
     return () => {
       cancelled = true;
-      if (pollInterval) clearInterval(pollInterval);
+      if (pollInterval) clearTimeout(pollInterval);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [program]);
