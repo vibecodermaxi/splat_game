@@ -64,12 +64,6 @@ export function useSeasonCompletion(seasonNumber: number = 1): UseSeasonCompleti
           return;
         }
 
-        // Need the Anchor coder — if program is null (no wallet), fall back gracefully
-        if (!program) {
-          if (!cancelled) setLoading(false);
-          return;
-        }
-
         const decoded = program.coder.accounts.decode("SeasonState", accountInfo.data) as {
           seasonNumber: number;
           currentPixelIndex: number;

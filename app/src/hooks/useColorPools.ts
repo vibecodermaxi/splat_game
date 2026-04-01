@@ -43,7 +43,7 @@ export function useColorPools() {
   const hasFetchedRef = useRef(false);
 
   useEffect(() => {
-    if (!program || seasonNumber === 0) return;
+    if (seasonNumber === 0) return;
 
     const fetchPools = async () => {
       try {

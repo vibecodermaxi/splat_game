@@ -102,7 +102,6 @@ export function useSeasonData(initialSeasonNumber: number = CURRENT_SEASON): Use
 
   // Fetch season + pixel data, then poll every 10s for updates
   useEffect(() => {
-    if (!program) return;
 
     let cancelled = false;
     let pollInterval: ReturnType<typeof setTimeout> | null = null;
@@ -129,7 +128,7 @@ export function useSeasonData(initialSeasonNumber: number = CURRENT_SEASON): Use
         const pixelPDAs = pixelIndices.map((i) => derivePixelPDA(PROGRAM_ID, sn, i)[0]);
 
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const pixelAccounts = await (program!.account as any)["pixelState"].fetchMultiple(pixelPDAs);
+        const pixelAccounts = await (program.account as any)["pixelState"].fetchMultiple(pixelPDAs);
 
         if (cancelled) return;
 
@@ -180,7 +179,7 @@ export function useSeasonData(initialSeasonNumber: number = CURRENT_SEASON): Use
 
   // Fetch player's BetAccount (requires wallet)
   useEffect(() => {
-    if (!program || !wallet?.publicKey) return;
+    if (!wallet?.publicKey) return;
 
     const seasonNumber = initialSeasonNumber;
     const currentPixelIndex = useGameStore.getState().currentPixelIndex;
@@ -197,7 +196,7 @@ export function useSeasonData(initialSeasonNumber: number = CURRENT_SEASON): Use
         );
         const betInfo = await connection.getAccountInfo(betPDA);
         if (betInfo && !cancelled) {
-          const decodedBet = program!.coder.accounts.decode("BetAccount", betInfo.data) as {
+          const decodedBet = program.coder.accounts.decode("BetAccount", betInfo.data) as {
             color: number;
             amount: bigint | number;
             claimed: boolean;
