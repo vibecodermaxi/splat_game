@@ -43,23 +43,24 @@ describe("buildSystemPrompt", () => {
 describe("buildUserMessage", () => {
   const emptyCanvas: PixelData[] = [];
 
-  it("Test 3: with empty canvas produces 'No pixels filled yet' and 'No previous selections'", () => {
+  it("Test 3: with empty canvas produces 'No previous selections' and correct grid", () => {
     const result = buildUserMessage(emptyCanvas, 0, 0, 10, 10, []);
-    expect(result).to.include("No pixels filled yet.");
     expect(result).to.include("No previous selections.");
     expect(result).to.include("Current pixel to paint: (0, 0)");
+    expect(result).to.include("Canvas progress:");
   });
 
-  it("Test 4: with 3 filled pixels includes all in canvas state section", () => {
+  it("Test 4: with 3 filled pixels includes them in the grid map", () => {
     const canvas: PixelData[] = [
       { x: 0, y: 0, color: "Red", shade: 50, warmth: 50 },
       { x: 1, y: 0, color: "Blue", shade: 30, warmth: 70 },
       { x: 2, y: 0, color: "Green", shade: 80, warmth: 20 },
     ];
     const result = buildUserMessage(canvas, 5, 5, 10, 10, []);
-    expect(result).to.include("(0, 0): Red");
-    expect(result).to.include("(1, 0): Blue");
-    expect(result).to.include("(2, 0): Green");
+    // Grid map should show R, B, G abbreviations in row 0
+    expect(result).to.include("Canvas grid");
+    expect(result).to.include("R B G");
+    expect(result).to.include("3 of 100 pixels filled");
   });
 
   it("Test 5: correctly identifies neighbors (adjacent pixels) for a center pixel", () => {
@@ -78,7 +79,7 @@ describe("buildUserMessage", () => {
     expect(result).to.include("empty");
   });
 
-  it("Test 6: includes last 5 round history entries with reasoning", () => {
+  it("Test 6: includes last 20 round history entries with reasoning", () => {
     const history: RoundHistoryEntry[] = [
       { pixelIndex: 0, x: 0, y: 0, color: "Red", shade: 50, warmth: 50, reasoning: "First choice" },
       { pixelIndex: 1, x: 1, y: 0, color: "Blue", shade: 30, warmth: 70, reasoning: "Second choice" },

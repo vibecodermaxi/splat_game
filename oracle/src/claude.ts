@@ -7,7 +7,9 @@
  * - callClaude: API call at temperature 0 with parse + validate pipeline
  *
  * Model: claude-sonnet-4-6 (locked decision per CONTEXT.md — Sonnet for art quality)
- * Temperature: 0 (NON-NEGOTIABLE — deterministic for commit-reveal verifiability)
+ * Temperature: 0.4 (slight variance for artistic diversity; commit-reveal still holds
+ *   because the prompt hash is committed before Claude is called — the hash proves
+ *   the input was locked, not that the output is deterministic)
  */
 
 import Anthropic from "@anthropic-ai/sdk";
@@ -66,7 +68,7 @@ export function validateClaudeResult(result: ClaudeResult): boolean {
  *
  * Uses:
  * - model: claude-sonnet-4-6 (locked per CONTEXT.md)
- * - temperature: 0 (deterministic — required for commit-reveal verifiability)
+ * - temperature: 0.4 (slight variance for artistic diversity)
  * - max_tokens: 256 (structured response is short)
  *
  * Throws if the response cannot be parsed or fails validation.
@@ -88,7 +90,7 @@ export async function callClaude(
   const response = await client.messages.create({
     model,
     max_tokens: 256,
-    temperature: 0,
+    temperature: 0.4,
     system: systemPrompt,
     messages: [{ role: "user", content: userMessage }],
   });

@@ -53,15 +53,15 @@ describe("RoundHistory", () => {
     expect(entries[0]).to.deep.equal(entry);
   });
 
-  it("Test 4: push keeps only the last 5 entries (oldest dropped)", async () => {
+  it("Test 4: push keeps only the last 20 entries (oldest dropped)", async () => {
     const history = new RoundHistory(historyPath);
-    for (let i = 0; i < 7; i++) {
+    for (let i = 0; i < 23; i++) {
       await history.push(makeEntry(i));
     }
     const entries = await history.read();
-    expect(entries).to.have.length(5);
-    expect(entries[0].pixelIndex).to.equal(2);
-    expect(entries[4].pixelIndex).to.equal(6);
+    expect(entries).to.have.length(20);
+    expect(entries[0].pixelIndex).to.equal(3);
+    expect(entries[19].pixelIndex).to.equal(22);
   });
 
   it("Test 5: after push, reading from a new RoundHistory instance returns the same data", async () => {

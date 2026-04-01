@@ -57,10 +57,11 @@ export function buildSystemPrompt(
  * Build the per-round user message for Claude.
  *
  * Includes:
- * - Current canvas state (all resolved pixels)
+ * - Canvas position context (row/col progress)
+ * - Current canvas state as a visual grid map
  * - Current pixel to paint (coordinates)
  * - Neighboring pixels (all 8 adjacent positions)
- * - Last up to 5 round history entries with reasoning
+ * - Last up to 20 round history entries with reasoning
  * - Final instruction line
  *
  * @param canvasPixels All currently filled pixels on the canvas
@@ -81,14 +82,53 @@ export function buildUserMessage(
 ): string {
   const lines: string[] = [];
 
-  // --- Canvas State ---
-  lines.push("Current canvas state:");
-  if (canvasPixels.length === 0) {
-    lines.push("No pixels filled yet.");
-  } else {
-    for (const p of canvasPixels) {
-      lines.push(`(${p.x}, ${p.y}): ${p.color}`);
+  // Build a lookup map for fast neighbor/grid checks
+  const pixelMap = new Map<string, PixelData>();
+  for (const p of canvasPixels) {
+    pixelMap.set(`${p.x},${p.y}`, p);
+  }
+
+  // --- Spatial Context ---
+  const row = currentY + 1;
+  const col = currentX + 1;
+  const filledRows = currentY > 0 ? currentY : 0;
+  lines.push(`Canvas progress: Row ${row} of ${gridHeight}, Column ${col} of ${gridWidth} (${canvasPixels.length} of ${gridWidth * gridHeight} pixels filled).`);
+  if (filledRows > 0) {
+    lines.push(`You have completed ${filledRows} full row${filledRows > 1 ? "s" : ""}.`);
+  }
+
+  lines.push("");
+
+  // --- Visual Grid Map ---
+  // First letter of each color, "." for empty, "*" for current pixel
+  // Color key: R=Red O=Orange Y=Yellow L=Lime G=Green T=Teal C=Cyan B=Blue
+  //            I=Indigo P=Purple K=Pink M=Magenta W=Brown A=Gray X=Black H=White
+  const colorAbbrev: Record<string, string> = {
+    Red: "R", Orange: "O", Yellow: "Y", Lime: "L", Green: "G", Teal: "T",
+    Cyan: "C", Blue: "B", Indigo: "I", Purple: "P", Pink: "K", Magenta: "M",
+    Brown: "W", Gray: "A", Black: "X", White: "H",
+  };
+
+  lines.push("Canvas grid (letter = color, . = empty, * = current pixel):");
+  lines.push("Key: R=Red O=Orange Y=Yellow L=Lime G=Green T=Teal C=Cyan B=Blue I=Indigo P=Purple K=Pink M=Magenta W=Brown A=Gray X=Black H=White");
+
+  // Only render rows that have at least one filled pixel or contain the current pixel
+  const maxRowToRender = Math.min(currentY + 2, gridHeight - 1);
+  for (let y = 0; y <= maxRowToRender; y++) {
+    let rowStr = "";
+    for (let x = 0; x < gridWidth; x++) {
+      if (x === currentX && y === currentY) {
+        rowStr += "* ";
+      } else {
+        const p = pixelMap.get(`${x},${y}`);
+        rowStr += p ? (colorAbbrev[p.color] ?? "?") + " " : ". ";
+      }
     }
+    const rowLabel = String(y).padStart(2, " ");
+    lines.push(`  ${rowLabel}| ${rowStr.trimEnd()}`);
+  }
+  if (maxRowToRender < gridHeight - 1) {
+    lines.push(`  ... (rows ${maxRowToRender + 1}-${gridHeight - 1} are empty)`);
   }
 
   lines.push("");
@@ -100,12 +140,6 @@ export function buildUserMessage(
 
   // --- Neighbors ---
   lines.push("Neighboring pixels:");
-
-  // Build a lookup map for fast neighbor checks
-  const pixelMap = new Map<string, PixelData>();
-  for (const p of canvasPixels) {
-    pixelMap.set(`${p.x},${p.y}`, p);
-  }
 
   // 8 adjacent directions: up, down, left, right, and 4 diagonals
   const directions = [
@@ -131,9 +165,9 @@ export function buildUserMessage(
 
   lines.push("");
 
-  // --- Last 5 Selections ---
-  lines.push("Your last 5 selections:");
-  const recentHistory = history.slice(-5);
+  // --- Last 20 Selections ---
+  lines.push("Your last 20 selections:");
+  const recentHistory = history.slice(-20);
   if (recentHistory.length === 0) {
     lines.push("No previous selections.");
   } else {

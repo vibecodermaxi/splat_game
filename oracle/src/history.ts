@@ -9,7 +9,7 @@ import type { RoundHistoryEntry } from "./types";
  * Guarantees:
  * - Reads are crash-safe: missing or corrupt files return an empty array
  * - Writes are atomic: uses a .tmp file + rename (atomic on Linux/macOS)
- * - History is capped at 5 entries (oldest dropped on overflow)
+ * - History is capped at 20 entries (oldest dropped on overflow)
  */
 export class RoundHistory {
   private filePath: string;
@@ -55,14 +55,14 @@ export class RoundHistory {
 
   /**
    * Append an entry to the history and persist atomically.
-   * Keeps only the last 5 entries (oldest dropped on overflow).
+   * Keeps only the last 20 entries (oldest dropped on overflow).
    *
    * Write is atomic: data is first written to `filePath.tmp`, then renamed
    * to `filePath`. On Linux/macOS, rename(2) is atomic within the same filesystem.
    */
   async push(entry: RoundHistoryEntry): Promise<void> {
     const current = await this.read();
-    const updated = [...current, entry].slice(-5);
+    const updated = [...current, entry].slice(-20);
 
     const tmpPath = this.filePath + ".tmp";
     await fs.writeFile(tmpPath, JSON.stringify(updated, null, 2), "utf8");
@@ -79,7 +79,7 @@ export class RoundHistory {
    * Reconstruct history from on-chain state after a Railway container restart
    * (where round_history.json is lost).
    *
-   * Fetches PixelState for the 5 most recent pixels before `currentPixel`,
+   * Fetches PixelState for the 20 most recent pixels before `currentPixel`,
    * builds RoundHistoryEntry objects from resolved pixels, and writes the
    * reconstructed history to disk.
    *
@@ -87,7 +87,7 @@ export class RoundHistory {
    *
    * @param chain - ChainClient instance (duck-typed to avoid circular imports)
    * @param seasonNumber - Current season number
-   * @param currentPixel - Current pixel index; reconstructs pixels [currentPixel-5, currentPixel-1]
+   * @param currentPixel - Current pixel index; reconstructs pixels [currentPixel-20, currentPixel-1]
    */
   async reconstruct(
     chain: {
@@ -106,7 +106,7 @@ export class RoundHistory {
     seasonNumber: number,
     currentPixel: number
   ): Promise<void> {
-    const startIndex = Math.max(0, currentPixel - 5);
+    const startIndex = Math.max(0, currentPixel - 20);
     const entries: RoundHistoryEntry[] = [];
 
     for (let i = startIndex; i < currentPixel; i++) {
