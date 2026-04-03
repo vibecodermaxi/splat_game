@@ -22,7 +22,7 @@ describe("buildSystemPrompt", () => {
     expect(result).to.include("10x10");
     // With empty season style summary, the placeholder line becomes empty
     // so there should be no substantive season style content beyond the template structure
-    expect(result).to.include("abstract artist");
+    expect(result).to.include("pixel artist");
     expect(result).to.include("COLOR: [color name]");
   });
 

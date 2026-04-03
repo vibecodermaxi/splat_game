@@ -103,7 +103,7 @@ export function loadConfig(): OracleConfig {
     treasuryWallet: process.env.TREASURY_WALLET || "6vTe3xRjB4Hv4fN4WQ5xtcF21Ed12DFPoNwHJTZDUg5v",
     jackpotWallet: process.env.JACKPOT_WALLET || "HrfnbCNRzvekRkdUJGzvmEu478F43uk7weReNDPqv2TB",
     currentSeason,
-    seasonStyleSummary: process.env.SEASON_STYLE_SUMMARY || "",
+    seasonStyleSummary: process.env.SEASON_STYLE_SUMMARY || "Paint a mountain landscape at sunset — orange and pink sky at the top, dark purple mountains in the middle, green pine trees in the foreground, and a blue lake reflecting the sky at the bottom.",
     telegramBotToken,
     telegramChatId,
     roundDurationMinutes,
