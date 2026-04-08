@@ -4,8 +4,20 @@ export const PROGRAM_ID = new PublicKey(
   "FaVo1qzkbVt1uPwyU4jRZ7hgkJbYTzat8iqtPE3orxQG"
 );
 
-export const GRID_SIZE = 20;
-export const TOTAL_PIXELS = 400;
+export const GRID_SIZE = 10;
+export const TOTAL_PIXELS = 100;
+
+/**
+ * v2 active palette: 8 of the 16 on-chain color indices.
+ *
+ * The contract still has 16 color pools per pixel for backwards compatibility
+ * with existing seasons, but the oracle only ever picks from these 8 and the
+ * frontend only lets players bet on these 8. The remaining 8 pools stay empty.
+ *
+ * Indices map to the canonical COLOR_NAMES array in lib/color.ts:
+ *   0=Red, 1=Orange, 2=Yellow, 4=Green, 7=Blue, 9=Purple, 14=Black, 15=White
+ */
+export const BETTABLE_COLOR_INDICES = [0, 1, 2, 4, 7, 9, 14, 15] as const;
 
 // Current season — configurable via env var for deployment
 export const CURRENT_SEASON = parseInt(

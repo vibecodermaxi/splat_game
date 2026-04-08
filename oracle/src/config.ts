@@ -103,7 +103,20 @@ export function loadConfig(): OracleConfig {
     treasuryWallet: process.env.TREASURY_WALLET || "6vTe3xRjB4Hv4fN4WQ5xtcF21Ed12DFPoNwHJTZDUg5v",
     jackpotWallet: process.env.JACKPOT_WALLET || "HrfnbCNRzvekRkdUJGzvmEu478F43uk7weReNDPqv2TB",
     currentSeason,
-    seasonStyleSummary: process.env.SEASON_STYLE_SUMMARY || "Paint a mountain landscape at sunset — orange and pink sky at the top, dark purple mountains in the middle, green pine trees in the foreground, and a blue lake reflecting the sky at the bottom.",
+    seasonStyleSummary:
+      process.env.SEASON_STYLE_SUMMARY ||
+      `Paint a fantasy world divided into 4 elemental quadrants. Each quadrant has its own palette of 3 colors:
+
+- Top-left (rows 0-4, cols 0-4): FIRE region. Use Red, Orange, Yellow.
+- Top-right (rows 0-4, cols 5-9): WATER region. Use Blue, Purple, White.
+- Bottom-left (rows 5-9, cols 0-4): EARTH region. Use Green, Yellow, Black.
+- Bottom-right (rows 5-9, cols 5-9): VOID region. Use Black, Purple, White.
+
+Within each quadrant, distribute the 3 colors roughly evenly — do not let any single color dominate. The exact placement of each color within a quadrant should feel organic and varied, not gridded.
+
+Where two quadrants meet (along the dividing lines), allow some bleeding: a fire pixel might leak into the water region, an earth pixel might leak into the void. These boundary surprises should happen on roughly 1 in 4 boundary pixels.
+
+Wild card rule: roughly 1 in 8 pixels anywhere on the canvas should be a "rift" pixel — pick a color from a DIFFERENT quadrant's palette than the one this pixel belongs to. Spread these throughout. Rifts make the canvas feel alive and unpredictable.`,
     telegramBotToken,
     telegramChatId,
     roundDurationMinutes,

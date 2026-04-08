@@ -110,7 +110,7 @@ export function buildUserMessage(
   };
 
   lines.push("Canvas grid (letter = color, . = empty, * = current pixel):");
-  lines.push("Key: R=Red O=Orange Y=Yellow L=Lime G=Green T=Teal C=Cyan B=Blue I=Indigo P=Purple K=Pink M=Magenta W=Brown A=Gray X=Black H=White");
+  lines.push("Key: R=Red O=Orange Y=Yellow G=Green B=Blue P=Purple X=Black H=White");
 
   // Only render rows that have at least one filled pixel or contain the current pixel
   const maxRowToRender = Math.min(currentY + 2, gridHeight - 1);

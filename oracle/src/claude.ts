@@ -53,13 +53,23 @@ export function parseClaudeResponse(raw: string): ClaudeResult | null {
 }
 
 /**
- * Validate a ClaudeResult to ensure all values are within acceptable ranges.
+ * v2 active palette: Claude may only pick from these 8 indices out of the
+ * 16-item COLOR_NAMES array. Any other color is rejected by validation.
+ *
+ * Indices: Red=0, Orange=1, Yellow=2, Green=4, Blue=7, Purple=9, Black=14, White=15
+ */
+export const BETTABLE_COLOR_INDICES = new Set([0, 1, 2, 4, 7, 9, 14, 15]);
+
+/**
+ * Validate a ClaudeResult to ensure all values are within acceptable ranges
+ * AND the colorIndex is one of the 8 bettable colors.
  *
  * @param result The parsed ClaudeResult to validate
  * @returns true if all values are valid, false otherwise
  */
 export function validateClaudeResult(result: ClaudeResult): boolean {
   if (result.colorIndex < 0 || result.colorIndex > 15) return false;
+  if (!BETTABLE_COLOR_INDICES.has(result.colorIndex)) return false;
   return true;
 }
 

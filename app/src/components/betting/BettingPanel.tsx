@@ -10,7 +10,7 @@ import { CountdownTimer } from "@/components/round/CountdownTimer";
 import { ColorSwatch } from "@/components/betting/ColorSwatch";
 import { BetInput } from "@/components/betting/BetInput";
 import { COLOR_NAMES, BASE_HEX } from "@/lib/color";
-import { MIN_BET_SOL } from "@/lib/constants";
+import { MIN_BET_SOL, BETTABLE_COLOR_INDICES } from "@/lib/constants";
 import { StreakBadge } from "@/components/ui/StreakBadge";
 
 // Toast notification for transaction feedback
@@ -221,7 +221,7 @@ export function BettingPanel() {
           marginBottom: "16px",
         }}
       >
-        {Array.from({ length: 16 }, (_, i) => (
+        {BETTABLE_COLOR_INDICES.map((i) => (
           <ColorSwatch
             key={i}
             colorIndex={i}
